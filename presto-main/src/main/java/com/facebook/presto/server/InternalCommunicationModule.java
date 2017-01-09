@@ -14,9 +14,13 @@
 package com.facebook.presto.server;
 
 import com.google.inject.Binder;
+import com.google.inject.Module;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.spnego.KerberosConfig;
 
+import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.configuration.ConditionalModule.installModuleIf;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 
 public class InternalCommunicationModule
@@ -30,5 +34,31 @@ public class InternalCommunicationModule
             config.setKeyStorePath(internalCommunicationConfig.getKeyStorePath());
             config.setKeyStorePassword(internalCommunicationConfig.getKeyStorePassword());
         });
+
+        install(installModuleIf(InternalCommunicationConfig.class, InternalCommunicationConfig::isKerberosEnabled, kerberosInternalCommunicationModule()));
+    }
+
+    private Module kerberosInternalCommunicationModule()
+    {
+        return binder -> {
+            KerberosInternalCommunicationConfig internalKerberosConfig = buildConfigObject(KerberosInternalCommunicationConfig.class);
+            com.facebook.presto.server.security.KerberosConfig serverKerberosConfig = buildConfigObject(com.facebook.presto.server.security.KerberosConfig.class);
+
+            checkState(serverKerberosConfig.getKeytab() != null && serverKerberosConfig.getKeytab().getAbsolutePath().equals(internalKerberosConfig.getKerberosKeytab().getAbsolutePath()), "kerberos keytab values must match");
+            checkState(serverKerberosConfig.getServiceName() != null && serverKerberosConfig.getServiceName().equals(internalKerberosConfig.getKerberosServiceName()), "kerberos servicename values must match");
+            checkState(serverKerberosConfig.getKerberosConfig() != null && serverKerberosConfig.getKerberosConfig().getAbsolutePath().equals(internalKerberosConfig.getKerberosConfig().getAbsolutePath()), "kerberos keytab values must match");
+
+            configBinder(binder).bindConfigGlobalDefaults(KerberosConfig.class, kerberosConfig -> {
+                kerberosConfig.setConfig(internalKerberosConfig.getKerberosConfig());
+                kerberosConfig.setKeytab(internalKerberosConfig.getKerberosKeytab());
+                kerberosConfig.setUseCanonicalHostname(internalKerberosConfig.isKerberosUseCanonicalHostname());
+                kerberosConfig.setCredentialCache(internalKerberosConfig.getKerberosCredentialCache());
+            });
+            configBinder(binder).bindConfigGlobalDefaults(HttpClientConfig.class, httpClientConfig -> {
+                httpClientConfig.setAuthenticationEnabled(true);
+                httpClientConfig.setKerberosPrincipal(internalKerberosConfig.getKerberosPrincipal());
+                httpClientConfig.setKerberosRemoteServiceName(internalKerberosConfig.getKerberosServiceName());
+            });
+        };
     }
 }
