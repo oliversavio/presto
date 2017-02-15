@@ -68,7 +68,7 @@ public final class TestingSession
         @Override
         public boolean isLegacyTimestamp()
         {
-            return true;
+            return false;
         }
 
         @Override
