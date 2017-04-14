@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.server;
 
+import com.facebook.presto.util.KerberosPrincipal;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
@@ -54,9 +55,11 @@ public class InternalCommunicationModule
                 kerberosConfig.setUseCanonicalHostname(internalKerberosConfig.isKerberosUseCanonicalHostname());
                 kerberosConfig.setCredentialCache(internalKerberosConfig.getKerberosCredentialCache());
             });
+
+            KerberosPrincipal principal = KerberosPrincipal.valueOf(internalKerberosConfig.getKerberosPrincipal());
             configBinder(binder).bindConfigGlobalDefaults(HttpClientConfig.class, httpClientConfig -> {
                 httpClientConfig.setAuthenticationEnabled(true);
-                httpClientConfig.setKerberosPrincipal(internalKerberosConfig.getKerberosPrincipal());
+                httpClientConfig.setKerberosPrincipal(principal.substituteHostnamePlaceholder().toString());
                 httpClientConfig.setKerberosRemoteServiceName(internalKerberosConfig.getKerberosServiceName());
             });
         };
