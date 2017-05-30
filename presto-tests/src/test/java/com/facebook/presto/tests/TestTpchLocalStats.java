@@ -21,9 +21,18 @@ import com.facebook.presto.tpch.TpchConnectorFactory;
 import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import static com.facebook.presto.SystemSessionProperties.USE_NEW_STATS_CALCULATOR;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
+import static com.facebook.presto.tests.statistics.MetricComparisonStrategies.defaultTolerance;
+import static com.facebook.presto.tests.statistics.MetricComparisonStrategies.isEqual;
+import static com.facebook.presto.tests.statistics.MetricComparisonStrategies.noError;
+import static com.facebook.presto.tests.statistics.Metrics.OUTPUT_ROW_COUNT;
+import static com.facebook.presto.tests.statistics.Metrics.distinctValuesCount;
+import static com.facebook.presto.tests.statistics.Metrics.highValue;
+import static com.facebook.presto.tests.statistics.Metrics.lowValue;
+import static com.facebook.presto.tests.statistics.Metrics.nullsFraction;
 import static com.facebook.presto.tpch.TpchMetadata.TINY_SCHEMA_NAME;
 
 public class TestTpchLocalStats
@@ -56,5 +65,29 @@ public class TestTpchLocalStats
             queryRunner.close();
             queryRunner = null;
         }
+    }
+
+    @Test
+    public void testTableScanStats()
+    {
+        statisticsAssertion.check("SELECT * FROM nation",
+                checks -> checks
+                        .estimate(OUTPUT_ROW_COUNT, defaultTolerance())
+
+                        .estimate(nullsFraction("n_nationkey"), noError())
+                        .estimate(distinctValuesCount("n_nationkey"), noError())
+                        .estimate(lowValue("n_nationkey"), isEqual())
+                        .estimate(highValue("n_nationkey"), isEqual())
+
+                        .estimate(distinctValuesCount("n_regionkey"), noError())
+                        .estimate(nullsFraction("n_regionkey"), noError())
+                        .estimate(lowValue("n_regionkey"), isEqual())
+                        .estimate(highValue("n_regionkey"), isEqual())
+
+                        .estimate(distinctValuesCount("n_name"), noError())
+                        .estimate(nullsFraction("n_name"), noError())
+                        .estimate(lowValue("n_name"), isEqual())
+                        .estimate(highValue("n_name"), isEqual())
+        );
     }
 }
