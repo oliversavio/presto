@@ -14,6 +14,8 @@
 package com.facebook.presto.sql.planner.iterative;
 
 import com.facebook.presto.Session;
+import com.facebook.presto.cost.CostCalculator;
+import com.facebook.presto.cost.PlanNodeCostEstimate;
 import com.facebook.presto.cost.PlanNodeStatsEstimate;
 import com.facebook.presto.cost.StatsCalculator;
 import com.facebook.presto.spi.type.Type;
@@ -24,6 +26,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static com.facebook.presto.cost.PlanNodeCostEstimate.INFINITE_COST;
 import static com.facebook.presto.cost.PlanNodeStatsEstimate.UNKNOWN_STATS;
 import static com.google.common.collect.MoreCollectors.toOptional;
 import static java.util.Objects.requireNonNull;
@@ -57,6 +60,8 @@ public interface Lookup
 
     PlanNodeStatsEstimate getStats(PlanNode node, Session session, Map<Symbol, Type> types);
 
+    PlanNodeCostEstimate getCumulativeCost(PlanNode node, Session session, Map<Symbol, Type> types);
+
     /**
      * A Lookup implementation that does not perform lookup. It satisfies contract
      * by rejecting {@link GroupReference}-s.
@@ -75,6 +80,12 @@ public interface Lookup
             {
                 return UNKNOWN_STATS;
             }
+
+            @Override
+            public PlanNodeCostEstimate getCumulativeCost(PlanNode node, Session session, Map<Symbol, Type> types)
+            {
+                return INFINITE_COST;
+            }
         };
     }
 
@@ -82,13 +93,15 @@ public interface Lookup
     static Lookup from(Function<GroupReference, Stream<PlanNode>> resolver)
     {
         return from(resolver,
-                (planNode, lookup, session, types) -> UNKNOWN_STATS);
+                (planNode, lookup, session, types) -> UNKNOWN_STATS,
+                (planNode, lookup, session, types) -> INFINITE_COST);
     }
 
-    static Lookup from(Function<GroupReference, Stream<PlanNode>> resolver, StatsCalculator statsCalculator)
+    static Lookup from(Function<GroupReference, Stream<PlanNode>> resolver, StatsCalculator statsCalculator, CostCalculator costCalculator)
     {
         requireNonNull(resolver, "resolver is null");
         requireNonNull(statsCalculator, "statsCalculator is null");
+        requireNonNull(costCalculator, "costCalculator is null");
 
         return new Lookup()
         {
@@ -102,6 +115,12 @@ public interface Lookup
             public PlanNodeStatsEstimate getStats(PlanNode node, Session session, Map<Symbol, Type> types)
             {
                 return statsCalculator.calculateStats(resolve(node), this, session, types);
+            }
+
+            @Override
+            public PlanNodeCostEstimate getCumulativeCost(PlanNode node, Session session, Map<Symbol, Type> types)
+            {
+                return costCalculator.calculateCumulativeCost(node, this, session, types);
             }
         };
     }

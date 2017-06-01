@@ -14,6 +14,7 @@
 package com.facebook.presto.sql.planner.iterative.rule.test;
 
 import com.facebook.presto.Session;
+import com.facebook.presto.cost.CostCalculator;
 import com.facebook.presto.cost.StatsCalculator;
 import com.facebook.presto.matching.Match;
 import com.facebook.presto.metadata.Metadata;
@@ -56,8 +57,9 @@ public class RuleAssert
     private final TransactionManager transactionManager;
     private final AccessControl accessControl;
     private final StatsCalculator statsCalculator;
+    private final CostCalculator costCalculator;
 
-    public RuleAssert(Metadata metadata, Session session, Rule rule, TransactionManager transactionManager, AccessControl accessControl, StatsCalculator statsCalculator)
+    public RuleAssert(Metadata metadata, Session session, Rule rule, TransactionManager transactionManager, AccessControl accessControl, StatsCalculator statsCalculator, CostCalculator costCalculator)
     {
         this.metadata = metadata;
         this.session = session;
@@ -65,6 +67,7 @@ public class RuleAssert
         this.transactionManager = transactionManager;
         this.accessControl = accessControl;
         this.statsCalculator = statsCalculator;
+        this.costCalculator = costCalculator;
     }
 
     public RuleAssert setSystemProperty(String key, String value)
@@ -143,7 +146,7 @@ public class RuleAssert
     {
         SymbolAllocator symbolAllocator = new SymbolAllocator(symbols);
         Memo memo = new Memo(idAllocator, plan);
-        Lookup lookup = Lookup.from(planNode -> Stream.of(memo.resolve(planNode)), statsCalculator);
+        Lookup lookup = Lookup.from(planNode -> Stream.of(memo.resolve(planNode)), statsCalculator, costCalculator);
 
         PlanNode memoRoot = memo.getNode(memo.getRootGroup());
 

@@ -15,6 +15,7 @@ package com.facebook.presto.sql.planner.iterative;
 
 import com.facebook.presto.Session;
 import com.facebook.presto.SystemSessionProperties;
+import com.facebook.presto.cost.CostCalculator;
 import com.facebook.presto.cost.StatsCalculator;
 import com.facebook.presto.matching.Match;
 import com.facebook.presto.matching.Matcher;
@@ -46,13 +47,14 @@ public class IterativeOptimizer
     private final RuleIndex ruleIndex;
     private final StatsRecorder stats;
     private final StatsCalculator statsCalculator;
+    private final CostCalculator costCalculator;
 
-    public IterativeOptimizer(StatsRecorder stats, StatsCalculator statsCalculator, Set<Rule<?>> rules)
+    public IterativeOptimizer(StatsRecorder stats, StatsCalculator statsCalculator, CostCalculator costCalculator, Set<Rule<?>> rules)
     {
-        this(stats, statsCalculator, ImmutableList.of(), rules);
+        this(stats, statsCalculator, costCalculator, ImmutableList.of(), rules);
     }
 
-    public IterativeOptimizer(StatsRecorder stats, StatsCalculator statsCalculator, List<PlanOptimizer> legacyRules, Set<Rule<?>> newRules)
+    public IterativeOptimizer(StatsRecorder stats, StatsCalculator statsCalculator, CostCalculator costCalculator, List<PlanOptimizer> legacyRules, Set<Rule<?>> newRules)
     {
         this.legacyRules = ImmutableList.copyOf(legacyRules);
         this.ruleIndex = RuleIndex.builder()
@@ -61,6 +63,7 @@ public class IterativeOptimizer
 
         this.stats = stats;
         this.statsCalculator = statsCalculator;
+        this.costCalculator = costCalculator;
 
         stats.registerAll(newRules);
     }
@@ -78,7 +81,7 @@ public class IterativeOptimizer
         }
 
         Memo memo = new Memo(idAllocator, plan);
-        Lookup lookup = new MemoBasedLookup(memo, statsCalculator);
+        Lookup lookup = new MemoBasedLookup(memo, statsCalculator, costCalculator);
         Matcher matcher = new PlanNodeMatcher(lookup);
 
         Duration timeout = SystemSessionProperties.getOptimizerTimeout(session);
