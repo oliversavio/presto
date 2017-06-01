@@ -14,7 +14,6 @@
 package com.facebook.presto.sql.analyzer;
 
 import com.facebook.presto.Session;
-import com.facebook.presto.cost.StatsCalculator;
 import com.facebook.presto.execution.DataDefinitionTask;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.security.AccessControl;
@@ -27,6 +26,7 @@ import com.facebook.presto.sql.planner.PlanFragmenter;
 import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
 import com.facebook.presto.sql.planner.PlanOptimizers;
 import com.facebook.presto.sql.planner.SubPlan;
+import com.facebook.presto.sql.planner.iterative.Lookup;
 import com.facebook.presto.sql.planner.optimizations.PlanOptimizer;
 import com.facebook.presto.sql.planner.planPrinter.PlanPrinter;
 import com.facebook.presto.sql.tree.ExplainType.Type;
@@ -49,7 +49,7 @@ public class QueryExplainer
     private final NodePartitioningManager nodePartitioningManager;
     private final AccessControl accessControl;
     private final SqlParser sqlParser;
-    private final StatsCalculator statsCalculator;
+    private final Lookup lookup;
     private final Map<Class<? extends Statement>, DataDefinitionTask<?>> dataDefinitionTask;
 
     @Inject
@@ -59,7 +59,7 @@ public class QueryExplainer
             NodePartitioningManager nodePartitioningManager,
             AccessControl accessControl,
             SqlParser sqlParser,
-            StatsCalculator statsCalculator,
+            Lookup lookup,
             Map<Class<? extends Statement>, DataDefinitionTask<?>> dataDefinitionTask)
     {
         this(planOptimizers.get(),
@@ -67,7 +67,7 @@ public class QueryExplainer
                 nodePartitioningManager,
                 accessControl,
                 sqlParser,
-                statsCalculator,
+                lookup,
                 dataDefinitionTask);
     }
 
@@ -77,7 +77,7 @@ public class QueryExplainer
             NodePartitioningManager nodePartitioningManager,
             AccessControl accessControl,
             SqlParser sqlParser,
-            StatsCalculator statsCalculator,
+            Lookup lookup,
             Map<Class<? extends Statement>, DataDefinitionTask<?>> dataDefinitionTask)
     {
         this.planOptimizers = requireNonNull(planOptimizers, "planOptimizers is null");
@@ -85,7 +85,7 @@ public class QueryExplainer
         this.nodePartitioningManager = requireNonNull(nodePartitioningManager, "nodePartitioningManager is null");
         this.accessControl = requireNonNull(accessControl, "accessControl is null");
         this.sqlParser = requireNonNull(sqlParser, "sqlParser is null");
-        this.statsCalculator = requireNonNull(statsCalculator, "statsCalculator is null");
+        this.lookup = requireNonNull(lookup, "lookup is null");
         this.dataDefinitionTask = ImmutableMap.copyOf(requireNonNull(dataDefinitionTask, "dataDefinitionTask is null"));
     }
 
@@ -105,17 +105,17 @@ public class QueryExplainer
         switch (planType) {
             case LOGICAL:
                 Plan plan = getLogicalPlan(session, statement, parameters);
-                return PlanPrinter.textLogicalPlan(plan.getRoot(), plan.getTypes(), metadata, statsCalculator, session);
+                return PlanPrinter.textLogicalPlan(plan.getRoot(), plan.getTypes(), metadata, lookup, session);
             case DISTRIBUTED:
                 SubPlan subPlan = getDistributedPlan(session, statement, parameters);
-                return PlanPrinter.textDistributedPlan(subPlan, metadata, statsCalculator, session);
+                return PlanPrinter.textDistributedPlan(subPlan, metadata, lookup, session);
         }
         throw new IllegalArgumentException("Unhandled plan type: " + planType);
     }
 
     public String getPlan(PlanFragment fragment, Session session)
     {
-        return PlanPrinter.textPlanFragment(fragment, metadata, statsCalculator, session);
+        return PlanPrinter.textPlanFragment(fragment, metadata, lookup, session);
     }
 
     private static <T extends Statement> String explainTask(Statement statement, DataDefinitionTask<T> task, List<Expression> parameters)
@@ -150,7 +150,7 @@ public class QueryExplainer
         PlanNodeIdAllocator idAllocator = new PlanNodeIdAllocator();
 
         // plan statement
-        LogicalPlanner logicalPlanner = new LogicalPlanner(session, planOptimizers, idAllocator, metadata, sqlParser, statsCalculator);
+        LogicalPlanner logicalPlanner = new LogicalPlanner(session, planOptimizers, idAllocator, metadata, sqlParser, lookup);
         return logicalPlanner.plan(analysis);
     }
 
