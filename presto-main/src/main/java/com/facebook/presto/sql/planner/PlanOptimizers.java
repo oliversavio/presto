@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.sql.planner;
 
+import com.facebook.presto.cost.CostCalculator;
 import com.facebook.presto.cost.StatsCalculator;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
@@ -124,9 +125,23 @@ public class PlanOptimizers
     private final MBeanExporter exporter;
 
     @Inject
-    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, MBeanExporter exporter, StatsCalculator statsCalculator)
+    public PlanOptimizers(
+            Metadata metadata,
+            SqlParser sqlParser,
+            FeaturesConfig featuresConfig,
+            MBeanExporter exporter,
+            StatsCalculator statsCalculator,
+            CostCalculator costCalculator,
+            CostCalculator estimatedExchangesCostCalculator)
     {
-        this(metadata, sqlParser, featuresConfig, false, exporter, statsCalculator);
+        this(metadata,
+                sqlParser,
+                featuresConfig,
+                false,
+                exporter,
+                statsCalculator,
+                costCalculator,
+                estimatedExchangesCostCalculator);
     }
 
     @PostConstruct
@@ -141,7 +156,15 @@ public class PlanOptimizers
         stats.unexport(exporter);
     }
 
-    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, boolean forceSingleNode, MBeanExporter exporter, StatsCalculator statsCalculator)
+    public PlanOptimizers(
+            Metadata metadata,
+            SqlParser sqlParser,
+            FeaturesConfig featuresConfig,
+            boolean forceSingleNode,
+            MBeanExporter exporter,
+            StatsCalculator statsCalculator,
+            CostCalculator costCalculator,
+            CostCalculator estimatedExchangesCostCalculator)
     {
         requireNonNull(statsCalculator, "statsCalculator can not be null");
         this.exporter = exporter;
@@ -172,6 +195,7 @@ public class PlanOptimizers
         IterativeOptimizer inlineProjections = new IterativeOptimizer(
                 stats,
                 statsCalculator,
+                estimatedExchangesCostCalculator,
                 ImmutableSet.of(
                         new InlineProjections(),
                         new RemoveRedundantIdentityProjections()));
@@ -179,6 +203,7 @@ public class PlanOptimizers
         IterativeOptimizer projectionPushDown = new IterativeOptimizer(
                 stats,
                 statsCalculator,
+                estimatedExchangesCostCalculator,
                 ImmutableList.of(new ProjectionPushDown()),
                 ImmutableSet.of(
                         new PushProjectionThroughUnion(),
@@ -187,6 +212,7 @@ public class PlanOptimizers
         IterativeOptimizer simplifyOptimizer = new IterativeOptimizer(
                 stats,
                 statsCalculator,
+                estimatedExchangesCostCalculator,
                 ImmutableList.of(new com.facebook.presto.sql.planner.optimizations.SimplifyExpressions(metadata, sqlParser)),
                 new SimplifyExpressions(metadata, sqlParser).rules());
 
@@ -195,6 +221,7 @@ public class PlanOptimizers
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableList.of(new DesugaringOptimizer(metadata, sqlParser)),
                         ImmutableSet.<Rule<?>>builder()
                                 .addAll(new DesugarLambdaExpression().rules())
@@ -204,11 +231,13 @@ public class PlanOptimizers
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableList.of(new com.facebook.presto.sql.planner.optimizations.CanonicalizeExpressions()),
                         new CanonicalizeExpressions().rules()),
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableSet.<Rule<?>>builder()
                                 .addAll(predicatePushDownRules)
                                 .addAll(columnPruningRules)
@@ -235,6 +264,7 @@ public class PlanOptimizers
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableSet.of(new RemoveRedundantIdentityProjections())),
                 new SetFlatteningOptimizer(),
                 new ImplementIntersectAndExceptAsUnion(),
@@ -244,11 +274,13 @@ public class PlanOptimizers
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableSet.of(new TransformExistsApplyToLateralNode(metadata.getFunctionRegistry()))),
                 new TransformQuantifiedComparisonApplyToLateralJoin(metadata),
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableList.of(
                                 new RemoveUnreferencedScalarLateralNodes(),
                                 new TransformUncorrelatedLateralToJoin(),
@@ -262,6 +294,7 @@ public class PlanOptimizers
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableSet.of(
                                 new RemoveUnreferencedScalarApplyNodes(),
                                 new TransformCorrelatedInPredicateToJoin(), // must be run after PruneUnreferencedOutputs
@@ -273,11 +306,13 @@ public class PlanOptimizers
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableSet.of(new PushDownTableConstraints(metadata, sqlParser))),
                 new PruneUnreferencedOutputs(),
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableSet.of(
                                 new RemoveRedundantIdentityProjections(),
                                 new PushAggregationThroughOuterJoin())),
@@ -290,11 +325,13 @@ public class PlanOptimizers
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableSet.of(new SimplifyCountOverConstant())),
                 new WindowFilterPushDown(metadata), // This must run after PredicatePushDown and LimitPushDown so that it squashes any successive filter nodes and limits
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableSet.<Rule<?>>builder()
                                 // add UnaliasSymbolReferences when it's ported
                                 .add(new RemoveRedundantIdentityProjections())
@@ -305,17 +342,20 @@ public class PlanOptimizers
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableSet.of(new RemoveRedundantIdentityProjections())),
                 new MetadataQueryOptimizer(metadata),
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableList.of(new com.facebook.presto.sql.planner.optimizations.EliminateCrossJoins()), // This can pull up Filter and Project nodes from between Joins, so we need to push them down again
                         ImmutableSet.of(new EliminateCrossJoins())),
                 new PredicatePushDown(metadata, sqlParser),
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        estimatedExchangesCostCalculator,
                         ImmutableSet.of(new PushDownTableConstraints(metadata, sqlParser))),
                 projectionPushDown);
 
@@ -324,6 +364,7 @@ public class PlanOptimizers
                     new IterativeOptimizer(
                             stats,
                             statsCalculator,
+                            estimatedExchangesCostCalculator,
                             ImmutableSet.of(new SingleMarkDistinctToGroupBy())),
                     new PruneUnreferencedOutputs());
         }
@@ -332,6 +373,7 @@ public class PlanOptimizers
         builder.add(new IterativeOptimizer(
                 stats,
                 statsCalculator,
+                estimatedExchangesCostCalculator,
                 ImmutableSet.of(
                         new CreatePartialTopN(),
                         new PushTopNThroughUnion())));
@@ -342,15 +384,19 @@ public class PlanOptimizers
                     new IterativeOptimizer(
                             stats,
                             statsCalculator,
+                            estimatedExchangesCostCalculator,
                             ImmutableList.of(new com.facebook.presto.sql.planner.optimizations.PushTableWriteThroughUnion()), // Must run before AddExchanges
                             ImmutableSet.of(new PushTableWriteThroughUnion())));
             builder.add(new AddExchanges(metadata, sqlParser));
         }
+        //noinspection UnusedAssignment
+        estimatedExchangesCostCalculator = null; // Prevent accidental use after AddExchanges
 
         builder.add(
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        costCalculator,
                         ImmutableList.of(new com.facebook.presto.sql.planner.optimizations.PickLayout(metadata)),
                         new PickTableLayout(metadata).rules()));
 
@@ -358,6 +404,7 @@ public class PlanOptimizers
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
+                        costCalculator,
                         ImmutableSet.of(new RemoveEmptyDelete()))); // Run RemoveEmptyDelete after table scan is removed by PickTableLayout/AddExchanges
 
         builder.add(new PredicatePushDown(metadata, sqlParser)); // Run predicate push down one more time in case we can leverage new information from layouts' effective predicate
@@ -368,6 +415,7 @@ public class PlanOptimizers
         builder.add(new IterativeOptimizer(
                 stats,
                 statsCalculator,
+                costCalculator,
                 ImmutableSet.of(new RemoveRedundantIdentityProjections())));
 
         // Optimizers above this don't understand local exchanges, so be careful moving this.
@@ -378,6 +426,7 @@ public class PlanOptimizers
         builder.add(new IterativeOptimizer(
                 stats,
                 statsCalculator,
+                costCalculator,
                 ImmutableSet.of(
                         new PushPartialAggregationThroughJoin(),
                         new PushPartialAggregationThroughExchange(metadata.getFunctionRegistry()),
@@ -385,6 +434,7 @@ public class PlanOptimizers
         builder.add(new IterativeOptimizer(
                 stats,
                 statsCalculator,
+                costCalculator,
                 ImmutableSet.of(
                         new AddIntermediateAggregations(),
                         new RemoveRedundantIdentityProjections())));
