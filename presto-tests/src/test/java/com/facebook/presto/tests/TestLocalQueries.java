@@ -80,6 +80,10 @@ public class TestLocalQueries
                         .row("nationkey", null, 25.0, 0.0, null)
                         .row(null, null, null, null, 25.0)
                         .build();
+        // TODO the following was a conflict during rebase:
+//        MaterializedResult expectedStatistics = resultBuilder(getSession(), VARCHAR, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE)
+//                .row(null, null, null, null, 25.0, null, null)
+//                .build();
 
         assertEquals(result, expectedStatistics);
     }
