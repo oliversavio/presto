@@ -43,6 +43,9 @@ import static java.util.concurrent.TimeUnit.MINUTES;
         "optimizer.processing-optimization"})
 public class FeaturesConfig
 {
+    private double cpuCostWeight = 75;
+    private double memoryCostWeight = 10;
+    private double networkCostWeight = 15;
     private boolean distributedIndexJoinsEnabled;
     private boolean distributedJoinsEnabled = true;
     private boolean colocatedJoinsEnabled;
@@ -86,6 +89,42 @@ public class FeaturesConfig
 
     private DataSize filterAndProjectMinOutputPageSize = new DataSize(25, KILOBYTE);
     private int filterAndProjectMinOutputPageRowCount = 256;
+
+    public double getCpuCostWeight()
+    {
+        return cpuCostWeight;
+    }
+
+    @Config("cpu-cost-weight")
+    public FeaturesConfig setCpuCostWeight(double cpuCostWeight)
+    {
+        this.cpuCostWeight = cpuCostWeight;
+        return this;
+    }
+
+    public double getMemoryCostWeight()
+    {
+        return memoryCostWeight;
+    }
+
+    @Config("memory-cost-weight")
+    public FeaturesConfig setMemoryCostWeight(double memoryCostWeight)
+    {
+        this.memoryCostWeight = memoryCostWeight;
+        return this;
+    }
+
+    public double getNetworkCostWeight()
+    {
+        return networkCostWeight;
+    }
+
+    @Config("network-cost-weight")
+    public FeaturesConfig setNetworkCostWeight(double networkCostWeight)
+    {
+        this.networkCostWeight = networkCostWeight;
+        return this;
+    }
 
     public boolean isResourceGroupsEnabled()
     {
