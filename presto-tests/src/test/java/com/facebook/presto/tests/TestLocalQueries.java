@@ -73,17 +73,15 @@ public class TestLocalQueries
         MaterializedResult result = computeActual("SHOW STATS FOR nation");
 
         MaterializedResult expectedStatistics =
-                resultBuilder(getSession(), VARCHAR, DOUBLE, DOUBLE, DOUBLE, DOUBLE)
-                        .row("regionkey", null, 5.0, 0.0, null)
-                        .row("name", null, 25.0, 0.0, null)
-                        .row("comment", null, 25.0, 0.0, null)
-                        .row("nationkey", null, 25.0, 0.0, null)
-                        .row(null, null, null, null, 25.0)
-                        .build();
-        // TODO the following was a conflict during rebase:
-//        MaterializedResult expectedStatistics = resultBuilder(getSession(), VARCHAR, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE)
-//                .row(null, null, null, null, 25.0, null, null)
-//                .build();
+                resultBuilder(getSession(), VARCHAR, DOUBLE, DOUBLE, DOUBLE, DOUBLE, VARCHAR, VARCHAR)
+                .row("regionkey", null, 5.0, 0.0, null, "0", "4")
+                .row("name", null, 25.0, 0.0, null, "ALGERIA", "VIETNAM")
+                .row("comment", null, 25.0, 0.0, null,
+                        " haggle. carefully final deposit...",
+                        "y final packages. slow foxes caj...")
+                .row("nationkey", null, 25.0, 0.0, null, "0", "24")
+                .row(null, null, null, null, 25.0, null, null)
+                .build();
 
         assertEquals(result, expectedStatistics);
     }
