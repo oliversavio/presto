@@ -14,11 +14,11 @@
 package com.facebook.presto.testing;
 
 import com.facebook.presto.Session;
-import com.facebook.presto.cost.StatsCalculator;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.metadata.QualifiedObjectName;
 import com.facebook.presto.spi.Plugin;
 import com.facebook.presto.sql.planner.NodePartitioningManager;
+import com.facebook.presto.sql.planner.iterative.Lookup;
 import com.facebook.presto.transaction.TransactionManager;
 import org.intellij.lang.annotations.Language;
 
@@ -43,7 +43,7 @@ public interface QueryRunner
 
     NodePartitioningManager getNodePartitioningManager();
 
-    StatsCalculator getStatsCalculator();
+    Lookup getLookup();
 
     TestingAccessControlManager getAccessControl();
 

@@ -14,7 +14,6 @@
 package com.facebook.presto.sql.planner.iterative.rule.test;
 
 import com.facebook.presto.Session;
-import com.facebook.presto.cost.PlanNodeStatsEstimate;
 import com.facebook.presto.cost.StatsCalculator;
 import com.facebook.presto.matching.Match;
 import com.facebook.presto.metadata.Metadata;
@@ -30,7 +29,6 @@ import com.facebook.presto.sql.planner.iterative.Memo;
 import com.facebook.presto.sql.planner.iterative.PlanNodeMatcher;
 import com.facebook.presto.sql.planner.iterative.Rule;
 import com.facebook.presto.sql.planner.plan.PlanNode;
-import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.planPrinter.PlanPrinter;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.collect.ImmutableSet;
@@ -48,7 +46,6 @@ import static org.testng.Assert.fail;
 public class RuleAssert
 {
     private final Metadata metadata;
-    private final StatsCalculator statsCalculator;
     private Session session;
     private final Rule<?> rule;
 
@@ -58,15 +55,16 @@ public class RuleAssert
     private PlanNode plan;
     private final TransactionManager transactionManager;
     private final AccessControl accessControl;
+    private final StatsCalculator statsCalculator;
 
-    public RuleAssert(Metadata metadata, StatsCalculator statsCalculator, Session session, Rule rule, TransactionManager transactionManager, AccessControl accessControl)
+    public RuleAssert(Metadata metadata, Session session, Rule rule, TransactionManager transactionManager, AccessControl accessControl, StatsCalculator statsCalculator)
     {
         this.metadata = metadata;
-        this.statsCalculator = statsCalculator;
         this.session = session;
         this.rule = rule;
         this.transactionManager = transactionManager;
         this.accessControl = accessControl;
+        this.statsCalculator = statsCalculator;
     }
 
     public RuleAssert setSystemProperty(String key, String value)
@@ -100,7 +98,7 @@ public class RuleAssert
             fail(String.format(
                     "Expected %s to not fire for:\n%s",
                     rule.getClass().getName(),
-                    inTransaction(session -> PlanPrinter.textLogicalPlan(plan, ruleApplication.types, metadata, statsCalculator, session, 2))));
+                    inTransaction(session -> PlanPrinter.textLogicalPlan(plan, ruleApplication.types, metadata, ruleApplication.lookup, session, 2))));
         }
     }
 
@@ -113,7 +111,7 @@ public class RuleAssert
             fail(String.format(
                     "%s did not fire for:\n%s",
                     rule.getClass().getName(),
-                    formatPlan(plan, types)));
+                    formatPlan(plan, types, ruleApplication.lookup)));
         }
 
         PlanNode actual = ruleApplication.getTransformedPlan();
@@ -122,7 +120,7 @@ public class RuleAssert
             fail(String.format(
                     "%s: rule fired but return the original plan:\n%s",
                     rule.getClass().getName(),
-                    formatPlan(plan, types)));
+                    formatPlan(plan, types, ruleApplication.lookup)));
         }
 
         if (!ImmutableSet.copyOf(plan.getOutputSymbols()).equals(ImmutableSet.copyOf(actual.getOutputSymbols()))) {
@@ -136,8 +134,7 @@ public class RuleAssert
         }
 
         inTransaction(session -> {
-            Map<PlanNodeId, PlanNodeStatsEstimate> planNodeStats = statsCalculator.calculateStatsForPlan(session, types, actual);
-            assertPlan(session, metadata, statsCalculator, new Plan(actual, types, planNodeStats), ruleApplication.lookup, pattern);
+            assertPlan(session, metadata, ruleApplication.lookup, new Plan(actual, types, ruleApplication.lookup, session), pattern);
             return null;
         });
     }
@@ -146,7 +143,7 @@ public class RuleAssert
     {
         SymbolAllocator symbolAllocator = new SymbolAllocator(symbols);
         Memo memo = new Memo(idAllocator, plan);
-        Lookup lookup = Lookup.from(planNode -> Stream.of(memo.resolve(planNode)));
+        Lookup lookup = Lookup.from(planNode -> Stream.of(memo.resolve(planNode)), statsCalculator);
 
         PlanNode memoRoot = memo.getNode(memo.getRootGroup());
 
@@ -169,9 +166,9 @@ public class RuleAssert
         return new RuleApplication(context.getLookup(), context.getSymbolAllocator().getTypes(), result);
     }
 
-    private String formatPlan(PlanNode plan, Map<Symbol, Type> types)
+    private String formatPlan(PlanNode plan, Map<Symbol, Type> types, Lookup lookup)
     {
-        return inTransaction(session -> PlanPrinter.textLogicalPlan(plan, types, metadata, statsCalculator, session, 2));
+        return inTransaction(session -> PlanPrinter.textLogicalPlan(plan, types, metadata, lookup, session, 2));
     }
 
     private <T> T inTransaction(Function<Session, T> transactionSessionConsumer)

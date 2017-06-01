@@ -15,6 +15,7 @@ package com.facebook.presto.sql.planner.iterative;
 
 import com.facebook.presto.Session;
 import com.facebook.presto.SystemSessionProperties;
+import com.facebook.presto.cost.StatsCalculator;
 import com.facebook.presto.matching.Match;
 import com.facebook.presto.matching.Matcher;
 import com.facebook.presto.spi.PrestoException;
@@ -32,7 +33,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static com.facebook.presto.spi.StandardErrorCode.OPTIMIZER_TIMEOUT;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -45,13 +45,14 @@ public class IterativeOptimizer
     private final List<PlanOptimizer> legacyRules;
     private final RuleIndex ruleIndex;
     private final StatsRecorder stats;
+    private final StatsCalculator statsCalculator;
 
-    public IterativeOptimizer(StatsRecorder stats, Set<Rule<?>> rules)
+    public IterativeOptimizer(StatsRecorder stats, StatsCalculator statsCalculator, Set<Rule<?>> rules)
     {
-        this(stats, ImmutableList.of(), rules);
+        this(stats, statsCalculator, ImmutableList.of(), rules);
     }
 
-    public IterativeOptimizer(StatsRecorder stats, List<PlanOptimizer> legacyRules, Set<Rule<?>> newRules)
+    public IterativeOptimizer(StatsRecorder stats, StatsCalculator statsCalculator, List<PlanOptimizer> legacyRules, Set<Rule<?>> newRules)
     {
         this.legacyRules = ImmutableList.copyOf(legacyRules);
         this.ruleIndex = RuleIndex.builder()
@@ -59,6 +60,7 @@ public class IterativeOptimizer
                 .build();
 
         this.stats = stats;
+        this.statsCalculator = statsCalculator;
 
         stats.registerAll(newRules);
     }
@@ -76,7 +78,7 @@ public class IterativeOptimizer
         }
 
         Memo memo = new Memo(idAllocator, plan);
-        Lookup lookup = Lookup.from(planNode -> Stream.of(memo.resolve(planNode)));
+        Lookup lookup = new MemoBasedLookup(memo, statsCalculator);
         Matcher matcher = new PlanNodeMatcher(lookup);
 
         Duration timeout = SystemSessionProperties.getOptimizerTimeout(session);
