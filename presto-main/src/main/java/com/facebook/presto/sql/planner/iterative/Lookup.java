@@ -13,13 +13,20 @@
  */
 package com.facebook.presto.sql.planner.iterative;
 
+import com.facebook.presto.Session;
+import com.facebook.presto.cost.PlanNodeStatsEstimate;
+import com.facebook.presto.cost.StatsCalculator;
+import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import static com.facebook.presto.cost.PlanNodeStatsEstimate.UNKNOWN_STATS;
 import static com.google.common.collect.MoreCollectors.toOptional;
+import static java.util.Objects.requireNonNull;
 
 public interface Lookup
 {
@@ -48,22 +55,54 @@ public interface Lookup
      */
     Stream<PlanNode> resolveGroup(PlanNode node);
 
+    PlanNodeStatsEstimate getStats(PlanNode node, Session session, Map<Symbol, Type> types);
+
     /**
      * A Lookup implementation that does not perform lookup. It satisfies contract
      * by rejecting {@link GroupReference}-s.
      */
     static Lookup noLookup()
     {
-        return node -> {
-            throw new UnsupportedOperationException();
+        return new Lookup() {
+            @Override
+            public Stream<PlanNode> resolveGroup(PlanNode node)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public PlanNodeStatsEstimate getStats(PlanNode node, Session session, Map<Symbol, Type> types)
+            {
+                return UNKNOWN_STATS;
+            }
         };
     }
 
+    @Deprecated
     static Lookup from(Function<GroupReference, Stream<PlanNode>> resolver)
     {
-        return node -> {
-            checkArgument(node instanceof GroupReference, "Node '%s' is not a GroupReference", node.getClass().getSimpleName());
-            return resolver.apply((GroupReference) node);
+        return from(resolver,
+                (planNode, lookup, session, types) -> UNKNOWN_STATS);
+    }
+
+    static Lookup from(Function<GroupReference, Stream<PlanNode>> resolver, StatsCalculator statsCalculator)
+    {
+        requireNonNull(resolver, "resolver is null");
+        requireNonNull(statsCalculator, "statsCalculator is null");
+
+        return new Lookup()
+        {
+            @Override
+            public Stream<PlanNode> resolveGroup(PlanNode node)
+            {
+                return resolver.apply((GroupReference) node);
+            }
+
+            @Override
+            public PlanNodeStatsEstimate getStats(PlanNode node, Session session, Map<Symbol, Type> types)
+            {
+                return statsCalculator.calculateStats(resolve(node), this, session, types);
+            }
         };
     }
 }
