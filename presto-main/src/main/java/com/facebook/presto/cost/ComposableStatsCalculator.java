@@ -14,30 +14,52 @@
 package com.facebook.presto.cost;
 
 import com.facebook.presto.Session;
+import com.facebook.presto.matching.Pattern;
+import com.facebook.presto.matching.pattern.TypeOfPattern;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.iterative.Lookup;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.PlanVisitor;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.TreeTraverser;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.Multimaps.toMultimap;
 
 public class ComposableStatsCalculator
         implements StatsCalculator
 {
-    private final Set<Rule> rules;
+    private final ListMultimap<Class<?>, Rule> rulesByRootType;
     private final List<Normalizer> normalizers;
 
     public ComposableStatsCalculator(Set<Rule> rules, List<Normalizer> normalizers)
     {
-        this.rules = ImmutableSet.copyOf(rules);
+        this.rulesByRootType = rules.stream()
+                .peek(rule -> checkArgument(rule.getPattern() instanceof TypeOfPattern, "Rule pattern must be TypeOfPattern"))
+                .collect(toMultimap(
+                        rule -> ((TypeOfPattern<?>) rule.getPattern()).expectedClass(),
+                        rule -> rule,
+                        ArrayListMultimap::create));
         this.normalizers = ImmutableList.copyOf(normalizers);
+    }
+
+    private Stream<Rule> getCandidates(PlanNode node)
+    {
+        return TreeTraverser.using((Class<?> clazz) -> clazz.getSuperclass() != null ? ImmutableList.of(clazz.getSuperclass()) : ImmutableList.of())
+                .preOrderTraversal(node.getClass())
+                .stream()
+                .flatMap(clazz -> rulesByRootType.get(clazz).stream());
     }
 
     @Override
@@ -49,6 +71,8 @@ public class ComposableStatsCalculator
 
     public interface Rule
     {
+        Pattern<? extends PlanNode> getPattern();
+
         Optional<PlanNodeStatsEstimate> calculate(PlanNode node, Lookup lookup, Session session, Map<Symbol, Type> types);
     }
 
@@ -74,7 +98,9 @@ public class ComposableStatsCalculator
         @Override
         protected PlanNodeStatsEstimate visitPlan(PlanNode node, Void context)
         {
-            for (Rule rule : rules) {
+            Iterator<Rule> ruleIterator = getCandidates(node).iterator();
+            while (ruleIterator.hasNext()) {
+                Rule rule = ruleIterator.next();
                 Optional<PlanNodeStatsEstimate> calculatedStats = rule.calculate(node, lookup, session, types);
                 if (calculatedStats.isPresent()) {
                     return normalize(node, calculatedStats.get());
