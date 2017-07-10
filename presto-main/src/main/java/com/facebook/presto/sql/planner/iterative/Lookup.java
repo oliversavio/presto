@@ -120,7 +120,7 @@ public interface Lookup
             @Override
             public PlanNodeCostEstimate getCumulativeCost(PlanNode node, Session session, Map<Symbol, Type> types)
             {
-                return costCalculator.calculateCumulativeCost(node, this, session, types);
+                return costCalculator.calculateCumulativeCost(resolve(node), this, session, types);
             }
         };
     }
