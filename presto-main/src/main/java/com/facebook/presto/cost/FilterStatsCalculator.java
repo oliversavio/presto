@@ -311,6 +311,11 @@ public class FilterStatsCalculator
             if (leftStats.equals(UNKNOWN_STATS) || rightStats.equals(UNKNOWN_STATS)) {
                 return Optional.empty();
             }
+
+            if (left instanceof SymbolReference && right instanceof SymbolReference && left.equals(right)) {
+                return process(new IsNotNullPredicate(left));
+            }
+
             return comparisonExpressionToExpressionStats(input, leftSymbol, leftStats.get(), rightSymbol, rightStats.get(), type);
         }
 

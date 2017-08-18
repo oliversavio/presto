@@ -47,6 +47,7 @@ import static com.facebook.presto.sql.ExpressionUtils.or;
 import static com.facebook.presto.sql.tree.ArithmeticBinaryExpression.Type.ADD;
 import static com.facebook.presto.sql.tree.BooleanLiteral.FALSE_LITERAL;
 import static com.facebook.presto.sql.tree.BooleanLiteral.TRUE_LITERAL;
+import static com.facebook.presto.sql.tree.ComparisonExpressionType.EQUAL;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
 import static java.lang.Double.NEGATIVE_INFINITY;
 import static java.lang.Double.NaN;
@@ -481,6 +482,22 @@ public class TestFilterStatsCalculator
                             .lowValue(-100.0)
                             .highValue(100.0)
                             .nullsFraction(0.0);
+                });
+    }
+
+    @Test
+    public void testSymbolEqualsSameSymbolFilter()
+    {
+        Expression symbolEqualsSymbol = new ComparisonExpression(ComparisonExpressionType.EQUAL, new SymbolReference("x"), new SymbolReference("x"));
+        assertExpression(symbolEqualsSymbol)
+                .outputRowsCount(750)
+                .symbolStats("x", symbolStats -> {
+                    SymbolStatsEstimate.builder()
+                            .setAverageRowSize(4.0)
+                            .setDistinctValuesCount(40.0)
+                            .setLowValue(-10.0)
+                            .setHighValue(10.0)
+                            .build();
                 });
     }
 
