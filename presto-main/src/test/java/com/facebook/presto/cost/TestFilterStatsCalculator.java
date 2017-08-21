@@ -47,7 +47,6 @@ import static com.facebook.presto.sql.ExpressionUtils.or;
 import static com.facebook.presto.sql.tree.ArithmeticBinaryExpression.Type.ADD;
 import static com.facebook.presto.sql.tree.BooleanLiteral.FALSE_LITERAL;
 import static com.facebook.presto.sql.tree.BooleanLiteral.TRUE_LITERAL;
-import static com.facebook.presto.sql.tree.ComparisonExpressionType.EQUAL;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
 import static java.lang.Double.NEGATIVE_INFINITY;
 import static java.lang.Double.NaN;
