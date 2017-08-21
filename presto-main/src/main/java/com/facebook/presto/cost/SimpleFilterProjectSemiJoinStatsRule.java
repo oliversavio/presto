@@ -39,7 +39,7 @@ import static java.util.Objects.requireNonNull;
 public class SimpleFilterProjectSemiJoinStatsRule
         implements ComposableStatsCalculator.Rule
 {
-    private static final Pattern PATTERN = Pattern.matchByClass(FilterNode.class);
+    private static final Pattern PATTERN = Pattern.typeOf(FilterNode.class);
 
     private final FilterStatsCalculator filterStatsCalculator;
     private final SemiJoinStatsCalculator semiJoinStatsCalculator;
