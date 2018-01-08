@@ -11,16 +11,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.facebook.presto.tpch.util;
 
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 public class Optionals
 {
     private Optionals() {}
+
+    public static <T> Optional<T> checkPresent(Optional<T> optional)
+    {
+        checkArgument(optional.isPresent(), "Expected a present optional, got empty()");
+        return optional;
+    }
 
     public static <S, T, R> Optional<R> withBoth(Optional<? extends S> left, Optional<? extends T> right, BiFunction<S, T, R> binaryFunction)
     {
