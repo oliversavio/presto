@@ -16,21 +16,21 @@ package com.facebook.presto.tests.statistics;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class MetricComparisonStrategies
+public final class MetricComparisonStrategies
 {
     private MetricComparisonStrategies() {}
 
-    public static MetricComparisonStrategy noError()
+    public static MetricComparisonStrategy<Double> noError()
     {
         return absoluteError(0);
     }
 
-    public static MetricComparisonStrategy absoluteError(double error)
+    public static MetricComparisonStrategy<Double> absoluteError(double error)
     {
         return absoluteError(-error, error);
     }
 
-    public static MetricComparisonStrategy absoluteError(double minError, double maxError)
+    public static MetricComparisonStrategy<Double> absoluteError(double minError, double maxError)
     {
         checkArgument(minError <= maxError, "minError '%s' has to be lower or equal than maxError '%s'", minError, maxError);
         return (actual, estimate) -> {
@@ -40,17 +40,17 @@ public class MetricComparisonStrategies
         };
     }
 
-    public static MetricComparisonStrategy defaultTolerance()
+    public static MetricComparisonStrategy<Double> defaultTolerance()
     {
         return relativeError(.1);
     }
 
-    public static MetricComparisonStrategy relativeError(double error)
+    public static MetricComparisonStrategy<Double> relativeError(double error)
     {
         return relativeError(-error, error);
     }
 
-    public static MetricComparisonStrategy relativeError(double minError, double maxError)
+    public static MetricComparisonStrategy<Double> relativeError(double minError, double maxError)
     {
         checkArgument(minError <= maxError, "minError '%s' has to be lower or equal than maxError '%s'", minError, maxError);
         return (actual, estimate) -> {
