@@ -23,6 +23,7 @@ import com.facebook.presto.sql.planner.plan.PlanNode;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -90,21 +91,27 @@ public class StatsCalculatorAssertion
 
     public StatsCalculatorAssertion check(Consumer<PlanNodeStatsAssertion> statisticsAssertionConsumer)
     {
-        PlanNodeStatsEstimate statsEstimate = statsCalculator.calculateStats(
-                planNode,
-                sourceNode -> {
-                    checkArgument(sourcesStats.containsKey(sourceNode), "stats not found for source %s", sourceNode);
-                    return sourcesStats.get(sourceNode);
-                },
-                noLookup(),
-                session,
-                types);
+        PlanNodeStatsEstimate statsEstimate = statsCalculator.calculateStats(planNode, this::getSourceStats, noLookup(), session, types);
         statisticsAssertionConsumer.accept(PlanNodeStatsAssertion.assertThat(statsEstimate));
+        return this;
+    }
+
+    public StatsCalculatorAssertion check(ComposableStatsCalculator.Rule rule, Consumer<PlanNodeStatsAssertion> statisticsAssertionConsumer)
+    {
+        Optional<PlanNodeStatsEstimate> statsEstimate = rule.calculate(planNode, this::getSourceStats, noLookup(), session, types);
+        checkState(statsEstimate.isPresent(), "Expected stats estimates to be present");
+        statisticsAssertionConsumer.accept(PlanNodeStatsAssertion.assertThat(statsEstimate.get()));
         return this;
     }
 
     private void checkPlanNodeSet()
     {
         checkState(planNode != null, "tested planNode not set yet");
+    }
+
+    private PlanNodeStatsEstimate getSourceStats(PlanNode sourceNode)
+    {
+        checkArgument(sourcesStats.containsKey(sourceNode), "stats not found for source %s", sourceNode);
+        return sourcesStats.get(sourceNode);
     }
 }
