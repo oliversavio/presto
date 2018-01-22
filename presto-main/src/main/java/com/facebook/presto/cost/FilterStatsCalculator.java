@@ -24,6 +24,8 @@ import com.facebook.presto.sql.tree.ComparisonExpression;
 import com.facebook.presto.sql.tree.ComparisonExpressionType;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.Literal;
+import com.facebook.presto.sql.tree.LogicalBinaryExpression;
+import com.facebook.presto.sql.tree.NotExpression;
 import com.facebook.presto.sql.tree.SymbolReference;
 
 import javax.inject.Inject;
@@ -32,8 +34,12 @@ import java.util.Map;
 
 import static com.facebook.presto.cost.ComparisonStatsCalculator.comparisonSymbolToLiteralStats;
 import static com.facebook.presto.cost.ComparisonStatsCalculator.comparisonSymbolToSymbolStats;
+import static com.facebook.presto.cost.PlanNodeStatsEstimateMath.addStatsAndSumDistinctValues;
+import static com.facebook.presto.cost.PlanNodeStatsEstimateMath.differenceInNonRangeStats;
+import static com.facebook.presto.cost.PlanNodeStatsEstimateMath.differenceInStats;
 import static com.facebook.presto.cost.SymbolStatsEstimate.buildFrom;
 import static java.lang.Double.NaN;
+import static java.lang.String.format;
 
 public class FilterStatsCalculator
 {
@@ -100,6 +106,30 @@ public class FilterStatsCalculator
                                             .setNullsFraction(NaN).build()));
 
             return falseStatsBuilder.setOutputRowCount(0.0).build();
+        }
+
+        @Override
+        protected PlanNodeStatsEstimate visitNotExpression(NotExpression node, Void context)
+        {
+            return differenceInStats(input, process(node.getValue()));
+        }
+
+        @Override
+        protected PlanNodeStatsEstimate visitLogicalBinaryExpression(LogicalBinaryExpression node, Void context)
+        {
+            PlanNodeStatsEstimate leftStats = process(node.getLeft());
+            PlanNodeStatsEstimate andStats = new FilterExpressionStatsCalculatingVisitor(leftStats, session, types).process(node.getRight());
+
+            switch (node.getType()) {
+                case AND:
+                    return andStats;
+                case OR:
+                    PlanNodeStatsEstimate rightStats = process(node.getRight());
+                    PlanNodeStatsEstimate sumStats = addStatsAndSumDistinctValues(leftStats, rightStats);
+                    return differenceInNonRangeStats(sumStats, andStats);
+                default:
+                    throw new IllegalStateException(format("Unimplemented logical binary operator expression %s", node.getType()));
+            }
         }
 
         @Override
