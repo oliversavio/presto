@@ -13,12 +13,14 @@
  */
 package com.facebook.presto.sql.planner.iterative;
 
+import com.facebook.presto.cost.PlanNodeStatsEstimate;
 import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,6 +28,8 @@ import java.util.stream.Stream;
 import static com.facebook.presto.sql.planner.iterative.Plans.resolveGroupReferences;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Verify.verify;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Stores a plan in a form that's efficient to mutate locally (i.e. without
@@ -60,6 +64,7 @@ public class Memo
 
     private final Map<Integer, PlanNode> membership = new HashMap<>();
     private final Map<Integer, Integer> referenceCounts = new HashMap<>();
+    private final Map<Integer, PlanNodeStatsEstimate> statistics = new HashMap<>();
 
     private int nextGroupId;
 
@@ -115,9 +120,23 @@ public class Memo
 
         incrementReferenceCounts(node);
         membership.put(group, node);
+        // TODO remove stats for groups depending on this group
+        statistics.remove(group);
         decrementReferenceCounts(old);
 
         return node;
+    }
+
+    public Optional<PlanNodeStatsEstimate> getStats(int group)
+    {
+        checkArgument(membership.containsKey(group), "Invalid group: %s", group);
+        return Optional.ofNullable(statistics.get(group));
+    }
+
+    public void storeStats(int group, PlanNodeStatsEstimate stats)
+    {
+        checkArgument(membership.containsKey(group), "Invalid group: %s", group);
+        statistics.put(group, requireNonNull(stats, "stats is null"));
     }
 
     private void incrementReferenceCounts(PlanNode node)
@@ -157,6 +176,7 @@ public class Memo
     {
         membership.remove(group);
         referenceCounts.remove(group);
+        statistics.remove(group);
     }
 
     private PlanNode insertChildrenAndRewrite(PlanNode node)
@@ -181,6 +201,7 @@ public class Memo
 
         membership.put(group, rewritten);
         referenceCounts.put(group, 0);
+        verify(!statistics.containsKey(group));
         incrementReferenceCounts(rewritten);
 
         return group;

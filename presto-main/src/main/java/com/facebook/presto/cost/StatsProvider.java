@@ -13,20 +13,9 @@
  */
 package com.facebook.presto.cost;
 
-import com.facebook.presto.Session;
-import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.sql.planner.Symbol;
-import com.facebook.presto.sql.planner.iterative.Lookup;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 
-import java.util.Map;
-
-public interface StatsCalculator
+public interface StatsProvider
 {
-    PlanNodeStatsEstimate calculateStats(
-            PlanNode node,
-            StatsProvider sourceStats,
-            Lookup lookup,
-            Session session,
-            Map<Symbol, Type> types);
+    PlanNodeStatsEstimate getStats(PlanNode node);
 }
