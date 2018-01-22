@@ -87,6 +87,7 @@ public class FeaturesConfig
     private int spillerThreads = 4;
     private double spillMaxUsedSpaceThreshold = 0.9;
     private boolean iterativeOptimizerEnabled = true;
+    private boolean useNewStatsCalculator;
     private boolean pushAggregationThroughJoin = true;
     private double memoryRevokingTarget = 0.5;
     private double memoryRevokingThreshold = 0.9;
@@ -425,6 +426,18 @@ public class FeaturesConfig
     public FeaturesConfig setIterativeOptimizerTimeout(Duration timeout)
     {
         this.iterativeOptimizerTimeout = timeout;
+        return this;
+    }
+
+    public boolean isUseNewStatsCalculator()
+    {
+        return useNewStatsCalculator;
+    }
+
+    @Config("experimental.use-new-stats-calculator")
+    public FeaturesConfig setUseNewStatsCalculator(boolean useNewStatsCalculator)
+    {
+        this.useNewStatsCalculator = useNewStatsCalculator;
         return this;
     }
 
