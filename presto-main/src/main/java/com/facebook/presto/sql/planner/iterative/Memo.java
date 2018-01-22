@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.sql.planner.iterative;
 
+import com.facebook.presto.cost.PlanNodeCostEstimate;
 import com.facebook.presto.cost.PlanNodeStatsEstimate;
 import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
 import com.facebook.presto.sql.planner.plan.PlanNode;
@@ -65,6 +66,7 @@ public class Memo
     private final Map<Integer, PlanNode> membership = new HashMap<>();
     private final Map<Integer, Integer> referenceCounts = new HashMap<>();
     private final Map<Integer, PlanNodeStatsEstimate> statistics = new HashMap<>();
+    private final Map<Integer, PlanNodeCostEstimate> cumulativeCosts = new HashMap<>();
 
     private int nextGroupId;
 
@@ -122,6 +124,8 @@ public class Memo
         membership.put(group, node);
         // TODO remove stats for groups depending on this group
         statistics.remove(group);
+        // TODO remove cumulative costs for groups depending on this group
+        cumulativeCosts.remove(group);
         decrementReferenceCounts(old);
 
         return node;
@@ -137,6 +141,18 @@ public class Memo
     {
         checkArgument(membership.containsKey(group), "Invalid group: %s", group);
         statistics.put(group, requireNonNull(stats, "stats is null"));
+    }
+
+    public Optional<PlanNodeCostEstimate> getCumulativeCost(int group)
+    {
+        checkArgument(membership.containsKey(group), "Invalid group: %s", group);
+        return Optional.ofNullable(cumulativeCosts.get(group));
+    }
+
+    public void storeCumulativeCost(int group, PlanNodeCostEstimate cost)
+    {
+        checkArgument(membership.containsKey(group), "Invalid group: %s", group);
+        cumulativeCosts.put(group, requireNonNull(cost, "cost is null"));
     }
 
     private void incrementReferenceCounts(PlanNode node)
@@ -177,6 +193,7 @@ public class Memo
         membership.remove(group);
         referenceCounts.remove(group);
         statistics.remove(group);
+        cumulativeCosts.remove(group);
     }
 
     private PlanNode insertChildrenAndRewrite(PlanNode node)
@@ -202,6 +219,7 @@ public class Memo
         membership.put(group, rewritten);
         referenceCounts.put(group, 0);
         verify(!statistics.containsKey(group));
+        verify(!cumulativeCosts.containsKey(group));
         incrementReferenceCounts(rewritten);
 
         return group;
