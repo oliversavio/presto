@@ -30,6 +30,7 @@ import com.facebook.presto.cost.CostCalculatorUsingExchanges;
 import com.facebook.presto.cost.CostCalculatorWithEstimatedExchanges;
 import com.facebook.presto.cost.CostComparator;
 import com.facebook.presto.cost.EnforceSingleRowStatsRule;
+import com.facebook.presto.cost.ExchangeStatsRule;
 import com.facebook.presto.cost.FilterStatsCalculator;
 import com.facebook.presto.cost.FilterStatsRule;
 import com.facebook.presto.cost.LimitStatsRule;
@@ -508,6 +509,7 @@ public class ServerMainModule
         rules.add(new ValuesStatsRule(metadata));
         rules.add(new LimitStatsRule());
         rules.add(new EnforceSingleRowStatsRule());
+        rules.add(new ExchangeStatsRule());
         return new ComposableStatsCalculator(rules.build());
     }
 
