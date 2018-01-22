@@ -385,7 +385,7 @@ public class PlanBuilder
             PlanNode source,
             PlanNode filteringSource)
     {
-        return new SemiJoinNode(idAllocator.getNextId(),
+        return semiJoin(
                 source,
                 filteringSource,
                 sourceJoinSymbol,
@@ -394,6 +394,28 @@ public class PlanBuilder
                 sourceHashSymbol,
                 filteringSourceHashSymbol,
                 Optional.empty());
+    }
+
+    public SemiJoinNode semiJoin(
+            PlanNode source,
+            PlanNode filteringSource,
+            Symbol sourceJoinSymbol,
+            Symbol filteringSourceJoinSymbol,
+            Symbol semiJoinOutput,
+            Optional<Symbol> sourceHashSymbol,
+            Optional<Symbol> filteringSourceHashSymbol,
+            Optional<SemiJoinNode.DistributionType> distributionType)
+    {
+        return new SemiJoinNode(
+                idAllocator.getNextId(),
+                source,
+                filteringSource,
+                sourceJoinSymbol,
+                filteringSourceJoinSymbol,
+                semiJoinOutput,
+                sourceHashSymbol,
+                filteringSourceHashSymbol,
+                distributionType);
     }
 
     public IndexSourceNode indexSource(
