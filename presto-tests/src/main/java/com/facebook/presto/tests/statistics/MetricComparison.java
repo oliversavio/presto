@@ -13,8 +13,6 @@
  */
 package com.facebook.presto.tests.statistics;
 
-import com.facebook.presto.sql.planner.plan.PlanNode;
-
 import java.util.Optional;
 
 import static com.facebook.presto.tests.statistics.MetricComparison.Result.DIFFER;
@@ -24,52 +22,48 @@ import static com.facebook.presto.tests.statistics.MetricComparison.Result.NO_ES
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
-public class MetricComparison
+public class MetricComparison<T>
 {
-    private final PlanNode planNode;
-    private final Metric metric;
-    private final Optional<Double> estimatedCost;
-    private final Optional<Double> executionCost;
+    private final Metric<T> metric;
+    private final Optional<T> estimatedValue;
+    private final Optional<T> actualValue;
 
-    public MetricComparison(PlanNode planNode, Metric metric, Optional<Double> estimatedCost, Optional<Double> executionCost)
+    public MetricComparison(Metric<T> metric, Optional<T> estimatedValue, Optional<T> actualValue)
     {
-        this.planNode = planNode;
         this.metric = metric;
-        this.estimatedCost = estimatedCost;
-        this.executionCost = executionCost;
+        this.estimatedValue = estimatedValue;
+        this.actualValue = actualValue;
     }
 
-    public Metric getMetric()
+    public Metric<T> getMetric()
     {
         return metric;
-    }
-
-    public PlanNode getPlanNode()
-    {
-        return planNode;
     }
 
     @Override
     public String toString()
     {
-        return format("Metric [%s] - estimated: [%s], real: [%s] - plan node: [%s]",
-                metric, print(estimatedCost), print(executionCost), planNode);
+        return format("Metric [%s] - estimated: [%s], real: [%s]",
+                metric, print(estimatedValue), print(actualValue));
     }
 
-    public Result result(MetricComparisonStrategy metricComparisonStrategy)
+    public Result result(MetricComparisonStrategy<T> metricComparisonStrategy)
     {
         requireNonNull(metricComparisonStrategy, "metricComparisonStrategy is null");
 
-        if (!estimatedCost.isPresent()) {
+        if (!estimatedValue.isPresent() && !actualValue.isPresent()) {
+            return MATCH;
+        }
+        if (!estimatedValue.isPresent()) {
             return NO_ESTIMATE;
         }
-        if (!executionCost.isPresent()) {
+        if (!actualValue.isPresent()) {
             return NO_BASELINE;
         }
-        return metricComparisonStrategy.matches(executionCost.get(), estimatedCost.get()) ? MATCH : DIFFER;
+        return metricComparisonStrategy.matches(actualValue.get(), estimatedValue.get()) ? MATCH : DIFFER;
     }
 
-    private String print(Optional<Double> cost)
+    private String print(Optional<T> cost)
     {
         return cost.map(Object::toString).orElse("UNKNOWN");
     }
