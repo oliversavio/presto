@@ -16,7 +16,10 @@ package com.facebook.presto.sql.planner.iterative.rule.test;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
+import java.util.Optional;
+
 import static io.airlift.testing.Closeables.closeAllRuntimeException;
+import static java.util.Collections.emptyMap;
 
 public abstract class BaseRuleTest
 {
@@ -36,7 +39,7 @@ public abstract class BaseRuleTest
     @BeforeClass
     public final void setUp()
     {
-        tester = new RuleTester(tpchPredicatePushdownEnabled);
+        tester = new RuleTester(tpchPredicatePushdownEnabled, emptyMap(), Optional.empty());
     }
 
     @AfterClass(alwaysRun = true)
