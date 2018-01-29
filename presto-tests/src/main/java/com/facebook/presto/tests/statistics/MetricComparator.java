@@ -22,7 +22,9 @@ import com.facebook.presto.sql.planner.Plan;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.plan.OutputNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
+import com.facebook.presto.testing.LocalQueryRunner;
 import com.facebook.presto.testing.MaterializedRow;
+import com.facebook.presto.testing.QueryRunner;
 import com.facebook.presto.tests.DistributedQueryRunner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -44,12 +46,12 @@ public final class MetricComparator
 {
     private MetricComparator() {}
 
-    public static Set<MetricComparison<?>> getMetricComparisons(String query, DistributedQueryRunner runner, Set<Metric<?>> metrics)
+    public static Set<MetricComparison<?>> getMetricComparisons(String query, QueryRunner runner, Set<Metric<?>> metrics)
     {
         return getMetricComparisons(query, runner, ImmutableList.copyOf(metrics));
     }
 
-    private static Set<MetricComparison<?>> getMetricComparisons(String query, DistributedQueryRunner runner, List<Metric<?>> metrics)
+    private static Set<MetricComparison<?>> getMetricComparisons(String query, QueryRunner runner, List<Metric<?>> metrics)
     {
         List<Optional<?>> estimatedValues = getEstimatedValues(metrics, query, runner);
         List<Optional<?>> actualValues = getActualValues(metrics, query, runner);
@@ -65,19 +67,43 @@ public final class MetricComparator
         return metricComparisons.build();
     }
 
-    private static List<Optional<?>> getEstimatedValues(List<Metric<?>> metrics, String query, DistributedQueryRunner runner)
+    private static List<Optional<?>> getEstimatedValues(List<Metric<?>> metrics, String query, QueryRunner runner)
     {
         return transaction(runner.getTransactionManager(), runner.getAccessControl())
                 .singleStatement()
                 .execute(runner.getDefaultSession(), session -> {
-                    String queryId = runner.executeWithQueryId(session, query).getQueryId();
-                    Plan queryPlan = runner.getQueryPlan(new QueryId(queryId));
-                    OutputNode outputNode = (OutputNode) queryPlan.getRoot();
-                    PlanNodeStatsEstimate outputNodeStats = calculateStats(outputNode, runner.getStatsCalculator(), session, queryPlan.getTypes());
-                    StatsContext statsContext = buildStatsContext(queryPlan, outputNode);
-                    List<Optional<?>> estimatedValues = getEstimatedValues(metrics, outputNodeStats, statsContext);
-                    return estimatedValues;
+                    if (runner instanceof DistributedQueryRunner) {
+                        return getEstimatedValuesDistributed(metrics, query, (DistributedQueryRunner) runner, session);
+                    }
+                    else if (runner instanceof LocalQueryRunner) {
+                        return getEstimatedValuesLocal(metrics, query, (LocalQueryRunner) runner, session);
+                    }
+                    else {
+                        throw new IllegalArgumentException("only local and distributed runner supported");
+                    }
                 });
+    }
+
+    private static List<Optional<?>> getEstimatedValuesDistributed(List<Metric<?>> metrics, String query, DistributedQueryRunner runner, Session session)
+    {
+        String queryId = runner.executeWithQueryId(session, query).getQueryId();
+        Plan queryPlan = runner.getQueryPlan(new QueryId(queryId));
+        return getEstimatedValues(metrics, runner, session, queryPlan);
+    }
+
+    private static List<Optional<?>> getEstimatedValuesLocal(List<Metric<?>> metrics, String query, LocalQueryRunner runner, Session session)
+    {
+        Plan queryPlan = runner.createPlan(session, query);
+        return getEstimatedValues(metrics, runner, session, queryPlan);
+    }
+
+    private static List<Optional<?>> getEstimatedValues(List<Metric<?>> metrics, QueryRunner runner, Session session, Plan queryPlan)
+    {
+        OutputNode outputNode = (OutputNode) queryPlan.getRoot();
+        PlanNodeStatsEstimate outputNodeStats = calculateStats(outputNode, runner.getStatsCalculator(), session, queryPlan.getTypes());
+        StatsContext statsContext = buildStatsContext(queryPlan, outputNode);
+        List<Optional<?>> estimatedValues = getEstimatedValues(metrics, outputNodeStats, statsContext);
+        return estimatedValues;
     }
 
     private static PlanNodeStatsEstimate calculateStats(PlanNode node, StatsCalculator statsCalculator, Session session, Map<Symbol, Type> types)
@@ -100,7 +126,7 @@ public final class MetricComparator
         return new StatsContext(columnSymbols.build(), queryPlan.getTypes());
     }
 
-    private static List<Optional<?>> getActualValues(List<Metric<?>> metrics, String query, DistributedQueryRunner runner)
+    private static List<Optional<?>> getActualValues(List<Metric<?>> metrics, String query, QueryRunner runner)
     {
         String statsQuery = "SELECT "
                 + metrics.stream().map(Metric::getComputingAggregationSql).collect(joining(","))
