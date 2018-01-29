@@ -30,8 +30,8 @@ import static java.lang.Double.isNaN;
 
 public class PlanNodeStatsEstimate
 {
+    private static final double DEFAULT_DATA_SIZE_PER_COLUMN = 10;
     public static final PlanNodeStatsEstimate UNKNOWN_STATS = builder().build();
-    public static final double DEFAULT_DATA_SIZE_PER_COLUMN = 10;
 
     private final double outputRowCount;
     private final Map<Symbol, SymbolStatsEstimate> symbolStatistics;
