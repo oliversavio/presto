@@ -21,10 +21,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static java.lang.Double.NaN;
 import static java.lang.Double.isNaN;
 
@@ -87,7 +87,7 @@ public class PlanNodeStatsEstimate
     {
         return buildFrom(this)
                 .setSymbolStatistics(symbolStatistics.entrySet().stream()
-                        .collect(Collectors.toMap(
+                        .collect(toImmutableMap(
                                 Map.Entry::getKey,
                                 e -> {
                                     if (e.getKey().equals(symbol)) {
@@ -127,7 +127,7 @@ public class PlanNodeStatsEstimate
             return false;
         }
         PlanNodeStatsEstimate that = (PlanNodeStatsEstimate) o;
-        return Double.compare(that.outputRowCount, outputRowCount) == 0 &&
+        return Double.compare(outputRowCount, that.outputRowCount) == 0 &&
                 Objects.equals(symbolStatistics, that.symbolStatistics);
     }
 

@@ -18,10 +18,8 @@ import com.facebook.presto.Session;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.Constraint;
-import com.facebook.presto.spi.predicate.TupleDomain;
 import com.facebook.presto.spi.statistics.TableStatistics;
 import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.sql.planner.DomainTranslator;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.plan.EnforceSingleRowNode;
 import com.facebook.presto.sql.planner.plan.ExchangeNode;
@@ -36,7 +34,6 @@ import com.facebook.presto.sql.planner.plan.ProjectNode;
 import com.facebook.presto.sql.planner.plan.SemiJoinNode;
 import com.facebook.presto.sql.planner.plan.TableScanNode;
 import com.facebook.presto.sql.planner.plan.ValuesNode;
-import com.facebook.presto.sql.tree.BooleanLiteral;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 
@@ -161,8 +158,7 @@ public class CoefficientBasedStatsCalculator
         @Override
         public PlanNodeStatsEstimate visitTableScan(TableScanNode node, Void context)
         {
-            Constraint<ColumnHandle> constraint = getConstraint(node);
-
+            Constraint<ColumnHandle> constraint = new Constraint<>(node.getCurrentConstraint(), bindings -> true);
             TableStatistics tableStatistics = metadata.getTableStatistics(session, node.getTable(), constraint);
             PlanNodeStatsEstimate tableScanStats = PlanNodeStatsEstimate.builder()
                     .setOutputRowCount(tableStatistics.getRowCount().getValue())
@@ -170,21 +166,6 @@ public class CoefficientBasedStatsCalculator
 
             stats.put(node.getId(), tableScanStats);
             return tableScanStats;
-        }
-
-        private Constraint<ColumnHandle> getConstraint(TableScanNode node)
-        {
-            DomainTranslator.ExtractionResult decomposedPredicate = DomainTranslator.fromPredicate(
-                    metadata,
-                    session,
-                    BooleanLiteral.TRUE_LITERAL,
-                    types);
-
-            TupleDomain<ColumnHandle> simplifiedConstraint = decomposedPredicate.getTupleDomain()
-                    .transform(node.getAssignments()::get)
-                    .intersect(node.getCurrentConstraint());
-
-            return new Constraint<>(simplifiedConstraint, bindings -> true);
         }
 
         @Override

@@ -42,13 +42,18 @@ public class SymbolStatsEstimate
         this.lowValue = lowValue;
         this.highValue = highValue;
 
-        checkArgument((0 <= nullsFraction && nullsFraction <= 1.) || isNaN(nullsFraction), "Nulls fraction should be within [0, 1] or NaN, got: %s", nullsFraction);
+        checkArgument(
+                (0 <= nullsFraction && nullsFraction <= 1.) || isNaN(nullsFraction),
+                "Nulls fraction should be within [0, 1] or NaN, got: %s",
+                nullsFraction);
+        // TODO normalize nullsFraction for an empty range (or validate it is already normalized)
         this.nullsFraction = nullsFraction;
 
         checkArgument(averageRowSize >= 0 || isNaN(averageRowSize), "Average row size should be non-negative or NaN, got: %s", averageRowSize);
         this.averageRowSize = averageRowSize;
 
         checkArgument(distinctValuesCount >= 0 || isNaN(distinctValuesCount), "Distinct values count should be non-negative, got: %s", distinctValuesCount);
+        // TODO normalize distinctValuesCount for an empty range (or validate it is already normalized)
         this.distinctValuesCount = distinctValuesCount;
     }
 
