@@ -71,13 +71,11 @@ public class FilterStatsCalculator
 
     private final Metadata metadata;
     private final ScalarStatsCalculator scalarStatsCalculator;
-    private final StatsNormalizer normalizer;
 
     public FilterStatsCalculator(Metadata metadata, ScalarStatsCalculator scalarStatsCalculator, StatsNormalizer normalizer)
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.scalarStatsCalculator = requireNonNull(scalarStatsCalculator, "scalarStatsCalculator is null");
-        this.normalizer = requireNonNull(normalizer, "normalizer is null");
     }
 
     public PlanNodeStatsEstimate filterStats(
@@ -87,7 +85,7 @@ public class FilterStatsCalculator
             Map<Symbol, Type> types)
     {
         return new FilterExpressionStatsCalculatingVisitor(statsEstimate, session, types).process(predicate)
-                .orElseGet(() -> normalizer.normalize(filterStatsForUnknownExpression(statsEstimate), types));
+                .orElseGet(() -> filterStatsForUnknownExpression(statsEstimate));
     }
 
     private static PlanNodeStatsEstimate filterStatsForUnknownExpression(PlanNodeStatsEstimate inputStatistics)
@@ -107,13 +105,6 @@ public class FilterStatsCalculator
             this.input = input;
             this.session = session;
             this.types = types;
-        }
-
-        @Override
-        public Optional<PlanNodeStatsEstimate> process(Node node, @Nullable Void context)
-        {
-            return super.process(node, context)
-                    .map(estimate -> normalizer.normalize(estimate, types));
         }
 
         @Override

@@ -25,14 +25,15 @@ import java.util.Map;
 import java.util.Optional;
 
 public class FilterStatsRule
-        implements ComposableStatsCalculator.Rule
+        extends SimpleStatsRule
 {
     private static final Pattern<FilterNode> PATTERN = Pattern.typeOf(FilterNode.class);
 
     private final FilterStatsCalculator filterStatsCalculator;
 
-    public FilterStatsRule(FilterStatsCalculator filterStatsCalculator)
+    public FilterStatsRule(StatsNormalizer normalizer, FilterStatsCalculator filterStatsCalculator)
     {
+        super(normalizer);
         this.filterStatsCalculator = filterStatsCalculator;
     }
 
@@ -43,7 +44,7 @@ public class FilterStatsRule
     }
 
     @Override
-    public Optional<PlanNodeStatsEstimate> calculate(PlanNode node, StatsProvider statsProvider, Lookup lookup, Session session, Map<Symbol, Type> types)
+    protected Optional<PlanNodeStatsEstimate> doCalculate(PlanNode node, StatsProvider statsProvider, Lookup lookup, Session session, Map<Symbol, Type> types)
     {
         FilterNode filterNode = (FilterNode) node;
         PlanNodeStatsEstimate sourceStats = statsProvider.getStats(filterNode.getSource());
