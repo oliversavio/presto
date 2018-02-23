@@ -96,7 +96,7 @@ public class TestStatsNormalizer
 
         assertNormalized(estimate)
                 .symbolStats(a, symbolAssert -> symbolAssert.distinctValuesCount(10))
-                .symbolStats(b, symbolAssert -> symbolAssert.distinctValuesCount(8))
+                .symbolStats(b, symbolAssert -> symbolAssert.distinctValuesCount(6))
                 .symbolStats(c, SymbolStatsAssertion::distinctValuesCountUnknown);
     }
 

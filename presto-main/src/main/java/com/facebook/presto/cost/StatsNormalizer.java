@@ -108,10 +108,7 @@ public class StatsNormalizer
 
             double nonNullValues = outputRowCount * (1 - nullsFraction);
             if (distinctValuesCount > nonNullValues) {
-                double difference = distinctValuesCount - nonNullValues;
-                distinctValuesCount -= difference / 2;
-                nonNullValues += difference / 2;
-                nullsFraction = 1 - nonNullValues / outputRowCount;
+                distinctValuesCount = nonNullValues;
             }
         }
 
