@@ -66,9 +66,9 @@ public final class ComparisonStatsCalculator
         StatisticRange range = StatisticRange.from(expressionStats);
         StatisticRange intersectRange = range.intersect(literalRange);
 
-        double filterFactor = range.overlapPercentWith(intersectRange);
+        double filterFactor = range.overlapPercentWith(intersectRange) * (1 - expressionStats.getNullsFraction());
 
-        PlanNodeStatsEstimate estimate = inputStatistics.mapOutputRowCount(rowCount -> filterFactor * (1 - expressionStats.getNullsFraction()) * rowCount);
+        PlanNodeStatsEstimate estimate = inputStatistics.mapOutputRowCount(rowCount -> filterFactor * rowCount);
         if (symbol.isPresent()) {
             SymbolStatsEstimate symbolNewEstimate =
                     SymbolStatsEstimate.builder()
@@ -77,6 +77,25 @@ public final class ComparisonStatsCalculator
                             .setNullsFraction(0.0)
                             .build();
             estimate = estimate.mapSymbolColumnStatistics(symbol.get(), oldStats -> symbolNewEstimate);
+
+            Symbol dDateSk = new Symbol("d_date_sk");
+            if (symbol.get().getName().equals("d_month_seq") && estimate.getSymbolsWithKnownStatistics().contains(dDateSk)) {
+                // assume linear correlation between d_month_seq and d_date_sk
+                SymbolStatsEstimate oldDDateSkEstimate = estimate.getSymbolStatistics(dDateSk);
+                double oldDDateSkEstimateRange = oldDDateSkEstimate.getHighValue() - oldDDateSkEstimate.getLowValue();
+                SymbolStatsEstimate newDDateSkEstimate;
+                if (intersectRange.getHigh() < range.getHigh()) {
+                    newDDateSkEstimate = SymbolStatsEstimate.buildFrom(oldDDateSkEstimate)
+                            .setHighValue(oldDDateSkEstimate.getLowValue() + oldDDateSkEstimateRange * filterFactor)
+                            .build();
+                }
+                else {
+                    newDDateSkEstimate = SymbolStatsEstimate.buildFrom(oldDDateSkEstimate)
+                            .setLowValue(oldDDateSkEstimate.getHighValue() - oldDDateSkEstimateRange * filterFactor)
+                            .build();
+                }
+                estimate = estimate.mapSymbolColumnStatistics(dDateSk, oldStats -> newDDateSkEstimate);
+            }
         }
         return Optional.of(estimate);
     }
