@@ -89,6 +89,7 @@ public final class SystemSessionProperties
     public static final String FORCE_SINGLE_NODE_OUTPUT = "force_single_node_output";
     public static final String FILTER_AND_PROJECT_MIN_OUTPUT_PAGE_SIZE = "filter_and_project_min_output_page_size";
     public static final String FILTER_AND_PROJECT_MIN_OUTPUT_PAGE_ROW_COUNT = "filter_and_project_min_output_page_row_count";
+    public static final String EQUALITY_INTERSECT_HEURISTIC = "equality_intersect_heuristic";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -415,7 +416,12 @@ public final class SystemSessionProperties
                         FILTER_AND_PROJECT_MIN_OUTPUT_PAGE_ROW_COUNT,
                         "Experimental: Minimum output page row count for filter and project operators",
                         featuresConfig.getFilterAndProjectMinOutputPageRowCount(),
-                        false));
+                        false),
+                booleanSessionProperty(
+                        EQUALITY_INTERSECT_HEURISTIC,
+                        "Equality intersect heuristic",
+                        false,
+                        true));
     }
 
     public List<PropertyMetadata<?>> getSessionProperties()
@@ -653,6 +659,11 @@ public final class SystemSessionProperties
     public static int getFilterAndProjectMinOutputPageRowCount(Session session)
     {
         return session.getSystemProperty(FILTER_AND_PROJECT_MIN_OUTPUT_PAGE_ROW_COUNT, Integer.class);
+    }
+
+    public static boolean isEqualityIntersectHeuristicEnabled(Session session)
+    {
+        return session.getSystemProperty(EQUALITY_INTERSECT_HEURISTIC, Boolean.class);
     }
 
     public static JoinDistributionType getJoinDistributionType(Session session)

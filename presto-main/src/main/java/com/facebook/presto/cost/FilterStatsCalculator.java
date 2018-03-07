@@ -14,6 +14,7 @@
 package com.facebook.presto.cost;
 
 import com.facebook.presto.Session;
+import com.facebook.presto.SystemSessionProperties;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.analyzer.ExpressionAnalyzer;
@@ -333,7 +334,7 @@ public class FilterStatsCalculator
                 return comparisonExpressionToLiteralStats(input, leftSymbol, leftStats, value, type);
             }
 
-            return comparisonExpressionToExpressionStats(input, leftSymbol, leftStats, rightSymbol, rightStats, type);
+            return comparisonExpressionToExpressionStats(input, leftSymbol, leftStats, rightSymbol, rightStats, type, SystemSessionProperties.isEqualityIntersectHeuristicEnabled(session));
         }
 
         private Optional<Symbol> asSymbol(Expression expression)

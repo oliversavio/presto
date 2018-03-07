@@ -151,13 +151,14 @@ public final class ComparisonStatsCalculator
             SymbolStatsEstimate leftStats,
             Optional<Symbol> right,
             SymbolStatsEstimate rightStats,
-            ComparisonExpressionType type)
+            ComparisonExpressionType type,
+            boolean useEqualityIntersectHeuristics)
     {
         switch (type) {
             case EQUAL:
-                return expressionToExpressionEquality(inputStatistics, left, leftStats, right, rightStats);
+                return expressionToExpressionEquality(inputStatistics, left, leftStats, right, rightStats, useEqualityIntersectHeuristics);
             case NOT_EQUAL:
-                return expressionToExpressionNonEquality(inputStatistics, left, leftStats, right, rightStats);
+                return expressionToExpressionNonEquality(inputStatistics, left, leftStats, right, rightStats, useEqualityIntersectHeuristics);
             case LESS_THAN:
             case LESS_THAN_OR_EQUAL:
             case GREATER_THAN:
@@ -173,7 +174,8 @@ public final class ComparisonStatsCalculator
             Optional<Symbol> left,
             SymbolStatsEstimate leftStats,
             Optional<Symbol> right,
-            SymbolStatsEstimate rightStats)
+            SymbolStatsEstimate rightStats,
+            boolean useEqualityIntersectHeuristics)
     {
         if (isNaN(leftStats.getDistinctValuesCount()) || isNaN(rightStats.getDistinctValuesCount())) {
             return Optional.empty();
@@ -184,11 +186,24 @@ public final class ComparisonStatsCalculator
 
         StatisticRange intersect = leftRange.intersect(rightRange);
 
+        double filterFactor;
+        double retainedNdv;
         double nullsFilterFactor = (1 - leftStats.getNullsFraction()) * (1 - rightStats.getNullsFraction());
-        double leftNdv = leftRange.getDistinctValuesCount();
-        double rightNdv = rightRange.getDistinctValuesCount();
-        double filterFactor = 1.0 / max(leftNdv, rightNdv, 1);
-        double retainedNdv = min(leftNdv, rightNdv);
+
+        if (useEqualityIntersectHeuristics) {
+            double leftFilterFactor = firstNonNaN(leftRange.overlapPercentWith(intersect), 1);
+            double rightFilterFactor = firstNonNaN(rightRange.overlapPercentWith(intersect), 1);
+            double leftNdvInRange = leftFilterFactor * leftRange.getDistinctValuesCount();
+            double rightNdvInRange = rightFilterFactor * rightRange.getDistinctValuesCount();
+            filterFactor = 1 * leftFilterFactor * rightFilterFactor / max(leftNdvInRange, rightNdvInRange, 1);
+            retainedNdv = min(leftNdvInRange, rightNdvInRange);
+        }
+        else {
+            double leftNdv = leftRange.getDistinctValuesCount();
+            double rightNdv = rightRange.getDistinctValuesCount();
+            filterFactor = 1.0 / max(leftNdv, rightNdv, 1);
+            retainedNdv = min(leftNdv, rightNdv);
+        }
 
         PlanNodeStatsEstimate.Builder estimate = PlanNodeStatsEstimate.buildFrom(inputStatistics)
                 .setOutputRowCount(inputStatistics.getOutputRowCount() * nullsFilterFactor * filterFactor);
@@ -222,13 +237,14 @@ public final class ComparisonStatsCalculator
             Optional<Symbol> left,
             SymbolStatsEstimate leftStats,
             Optional<Symbol> right,
-            SymbolStatsEstimate rightStats)
+            SymbolStatsEstimate rightStats,
+            boolean useEqualityIntersectHeuristics)
     {
         double nullsFilterFactor = (1 - leftStats.getNullsFraction()) * (1 - rightStats.getNullsFraction());
         PlanNodeStatsEstimate inputNullsFiltered = inputStatistics.mapOutputRowCount(size -> size * nullsFilterFactor);
         SymbolStatsEstimate leftNullsFiltered = leftStats.mapNullsFraction(nullsFraction -> 0.0);
         SymbolStatsEstimate rightNullsFiltered = rightStats.mapNullsFraction(nullsFration -> 0.0);
-        Optional<PlanNodeStatsEstimate> equalityStats = expressionToExpressionEquality(inputNullsFiltered, left, leftNullsFiltered, right, rightNullsFiltered);
+        Optional<PlanNodeStatsEstimate> equalityStats = expressionToExpressionEquality(inputNullsFiltered, left, leftNullsFiltered, right, rightNullsFiltered, useEqualityIntersectHeuristics);
         if (!equalityStats.isPresent()) {
             return Optional.empty();
         }
