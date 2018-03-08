@@ -79,7 +79,7 @@ public final class ComparisonStatsCalculator
             estimate = estimate.mapSymbolColumnStatistics(symbol.get(), oldStats -> symbolNewEstimate);
 
             Symbol dDateSk = new Symbol("d_date_sk");
-            if (symbol.get().getName().equals("d_month_seq") && estimate.getSymbolsWithKnownStatistics().contains(dDateSk)) {
+            if (symbol.get().getName().equals("d_year") && estimate.getSymbolsWithKnownStatistics().contains(dDateSk)) {
                 // assume linear correlation between d_month_seq and d_date_sk
                 SymbolStatsEstimate oldDDateSkEstimate = estimate.getSymbolStatistics(dDateSk);
                 double oldDDateSkEstimateRange = oldDDateSkEstimate.getHighValue() - oldDDateSkEstimate.getLowValue();
