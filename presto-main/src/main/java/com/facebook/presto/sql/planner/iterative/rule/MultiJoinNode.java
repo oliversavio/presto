@@ -94,12 +94,14 @@ class MultiJoinNode
 
             // (limit - 2) because you need to account for adding left and right side
             if (!(resolved instanceof JoinNode) || (sources.size() > (limit - 2))) {
+                System.out.println("adding: " + resolved);
                 sources.add(node);
                 return;
             }
 
             JoinNode joinNode = (JoinNode) resolved;
             if (joinNode.getType() != INNER || !isDeterministic(joinNode.getFilter().orElse(TRUE_LITERAL)) || joinNode.getDistributionType().isPresent()) {
+                System.out.println("adding: " + resolved);
                 sources.add(node);
                 return;
             }

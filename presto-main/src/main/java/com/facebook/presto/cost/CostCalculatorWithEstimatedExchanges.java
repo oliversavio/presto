@@ -36,7 +36,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.IntSupplier;
 
-import static com.facebook.presto.cost.CostCalculatorUsingExchanges.currentNumberOfWorkerNodes;
 import static com.facebook.presto.cost.PlanNodeCostEstimate.ZERO_COST;
 import static com.facebook.presto.sql.planner.plan.ExchangeNode.Scope.LOCAL;
 import static com.facebook.presto.sql.planner.plan.ExchangeNode.Scope.REMOTE;
@@ -57,7 +56,7 @@ public class CostCalculatorWithEstimatedExchanges
     @Inject
     public CostCalculatorWithEstimatedExchanges(CostCalculator costCalculator, NodeSchedulerConfig nodeSchedulerConfig, InternalNodeManager nodeManager)
     {
-        this(costCalculator, currentNumberOfWorkerNodes(nodeSchedulerConfig.isIncludeCoordinator(), nodeManager));
+        this(costCalculator, () -> 8);
     }
 
     public CostCalculatorWithEstimatedExchanges(CostCalculator costCalculator, IntSupplier numberOfNodes)

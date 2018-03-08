@@ -110,7 +110,11 @@ public class ReorderJoins
             return Result.empty();
         }
 
+        System.out.println("ENUMERATING:");
         MultiJoinNode multiJoinNode = toMultiJoinNode(joinNode, context.getLookup(), JOIN_LIMIT);
+        System.out.println("FILTERS:" + multiJoinNode.getFilter());
+        System.out.println();
+
         if (multiJoinNode.getSources().size() < 2) {
             // Possible when e.g. joinNode has non-deterministic filter. Reordering is generally not allowed in this case.
             return Result.empty();

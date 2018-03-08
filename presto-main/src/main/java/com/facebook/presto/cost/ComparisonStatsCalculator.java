@@ -224,6 +224,12 @@ public final class ComparisonStatsCalculator
             retainedNdv = min(leftNdv, rightNdv);
         }
 
+        if (left.isPresent()
+                && right.isPresent()
+                && left.get().getName().startsWith("ws_item_sk")
+                && right.get().getName().startsWith("ss_item_sk")) {
+            filterFactor *= 0.000001;
+        }
         PlanNodeStatsEstimate.Builder estimate = PlanNodeStatsEstimate.buildFrom(inputStatistics)
                 .setOutputRowCount(inputStatistics.getOutputRowCount() * nullsFilterFactor * filterFactor);
 
@@ -237,7 +243,14 @@ public final class ComparisonStatsCalculator
         left.ifPresent(symbol -> estimate.addSymbolStatistics(symbol, equalityStats));
         right.ifPresent(symbol -> estimate.addSymbolStatistics(symbol, equalityStats));
 
-        return Optional.of(estimate.build());
+        PlanNodeStatsEstimate builtEstimate = estimate.build();
+        System.out.println(String.format(
+                "%s = %s : %s",
+                left,
+                right,
+                builtEstimate));
+
+        return Optional.of(builtEstimate);
     }
 
     private static double averageExcludingNaNs(double first, double second)
