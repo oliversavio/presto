@@ -228,7 +228,7 @@ public final class ComparisonStatsCalculator
                 && right.isPresent()
                 && left.get().getName().startsWith("ws_item_sk")
                 && right.get().getName().startsWith("ss_item_sk")) {
-            filterFactor *= 0.000001;
+            filterFactor *= 0.00001;
         }
         PlanNodeStatsEstimate.Builder estimate = PlanNodeStatsEstimate.buildFrom(inputStatistics)
                 .setOutputRowCount(inputStatistics.getOutputRowCount() * nullsFilterFactor * filterFactor);
