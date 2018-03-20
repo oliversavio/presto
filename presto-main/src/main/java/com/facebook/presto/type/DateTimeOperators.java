@@ -64,14 +64,20 @@ public final class DateTimeOperators
     @SqlType(StandardTypes.TIME)
     public static long timePlusIntervalDayToSecond(ConnectorSession session, @SqlType(StandardTypes.TIME) long left, @SqlType(StandardTypes.INTERVAL_DAY_TO_SECOND) long right)
     {
-        return modulo24Hour(getChronology(session.getTimeZoneKey()), left + right);
+        if (session.isLegacyTimestamp()) {
+            return modulo24Hour(getChronology(session.getTimeZoneKey()), left + right);
+        }
+        return modulo24Hour(left + right);
     }
 
     @ScalarOperator(ADD)
     @SqlType(StandardTypes.TIME)
     public static long intervalDayToSecondPlusTime(ConnectorSession session, @SqlType(StandardTypes.INTERVAL_DAY_TO_SECOND) long left, @SqlType(StandardTypes.TIME) long right)
     {
-        return modulo24Hour(getChronology(session.getTimeZoneKey()), left + right);
+        if (session.isLegacyTimestamp()) {
+            return modulo24Hour(getChronology(session.getTimeZoneKey()), left + right);
+        }
+        return modulo24Hour(right + left);
     }
 
     @ScalarOperator(ADD)
@@ -164,14 +170,24 @@ public final class DateTimeOperators
     @SqlType(StandardTypes.TIMESTAMP)
     public static long timestampPlusIntervalYearToMonth(ConnectorSession session, @SqlType(StandardTypes.TIMESTAMP) long left, @SqlType(StandardTypes.INTERVAL_YEAR_TO_MONTH) long right)
     {
-        return getChronology(session.getTimeZoneKey()).monthOfYear().add(left, right);
+        if (session.isLegacyTimestamp()) {
+            return getChronology(session.getTimeZoneKey()).monthOfYear().add(left, right);
+        }
+        else {
+            return MONTH_OF_YEAR_UTC.add(left, right);
+        }
     }
 
     @ScalarOperator(ADD)
     @SqlType(StandardTypes.TIMESTAMP)
     public static long intervalYearToMonthPlusTimestamp(ConnectorSession session, @SqlType(StandardTypes.INTERVAL_YEAR_TO_MONTH) long left, @SqlType(StandardTypes.TIMESTAMP) long right)
     {
-        return getChronology(session.getTimeZoneKey()).monthOfYear().add(right, left);
+        if (session.isLegacyTimestamp()) {
+            return getChronology(session.getTimeZoneKey()).monthOfYear().add(right, left);
+        }
+        else {
+            return MONTH_OF_YEAR_UTC.add(right, left);
+        }
     }
 
     @ScalarOperator(ADD)
@@ -252,7 +268,12 @@ public final class DateTimeOperators
     @SqlType(StandardTypes.TIMESTAMP)
     public static long timestampMinusIntervalYearToMonth(ConnectorSession session, @SqlType(StandardTypes.TIMESTAMP) long left, @SqlType(StandardTypes.INTERVAL_YEAR_TO_MONTH) long right)
     {
-        return getChronology(session.getTimeZoneKey()).monthOfYear().add(left, -right);
+        if (session.isLegacyTimestamp()) {
+            return getChronology(session.getTimeZoneKey()).monthOfYear().add(left, -right);
+        }
+        else {
+            return MONTH_OF_YEAR_UTC.add(left, -right);
+        }
     }
 
     @ScalarOperator(SUBTRACT)
