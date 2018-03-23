@@ -48,6 +48,7 @@ public class SystemTablesMetadata
         implements ConnectorMetadata
 {
     private final ConnectorId connectorId;
+
     private final Map<SchemaTableName, ConnectorTableMetadata> tables;
 
     public SystemTablesMetadata(ConnectorId connectorId, Set<SystemTable> tables)
