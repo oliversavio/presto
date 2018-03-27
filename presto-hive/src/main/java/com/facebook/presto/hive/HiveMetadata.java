@@ -149,7 +149,6 @@ import static com.facebook.presto.hive.metastore.SemiTransactionalHiveMetastore.
 import static com.facebook.presto.hive.metastore.StorageFormat.VIEW_STORAGE_FORMAT;
 import static com.facebook.presto.hive.metastore.StorageFormat.fromHiveStorageFormat;
 import static com.facebook.presto.hive.util.ConfigurationUtils.toJobConf;
-import static com.facebook.presto.spi.Constraint.alwaysTrue;
 import static com.facebook.presto.spi.StandardErrorCode.INVALID_SCHEMA_PROPERTY;
 import static com.facebook.presto.spi.StandardErrorCode.INVALID_TABLE_PROPERTY;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
@@ -326,16 +325,20 @@ public class HiveMetadata
             @Override
             public RecordCursor cursor(ConnectorTransactionHandle transactionHandle, ConnectorSession session, TupleDomain<Integer> constraint)
             {
-                Iterable<List<Object>> records = () ->
-                        stream(partitionManager.getPartitions(metastore, sourceTableHandle, alwaysTrue()).getPartitions())
-                                .map(hivePartition -> {
-                                    List<Object> values = new ArrayList<>();
-                                    for (int i = 0; i < partitionColumns.size(); ++i) {
-                                        values.add(hivePartition.getKeys().get(fieldIdToColumnHandle.get(i)).getValue());
-                                    }
-                                    return values;
-                                })
-                                .iterator();
+                Iterable<List<Object>> records = () -> {
+                    TupleDomain<ColumnHandle> targetTupleDomain = constraint.transform(fieldIdToColumnHandle::get);
+                    Predicate<Map<ColumnHandle, NullableValue>> targetPredicate = convertToPredicate(targetTupleDomain);
+                    Constraint<ColumnHandle> targetConstraint = new Constraint<>(targetTupleDomain, targetPredicate);
+                    return stream(partitionManager.getPartitions(metastore, sourceTableHandle, targetConstraint).getPartitions())
+                            .map(hivePartition -> {
+                                List<Object> values = new ArrayList<>();
+                                for (int i = 0; i < partitionColumns.size(); ++i) {
+                                    values.add(hivePartition.getKeys().get(fieldIdToColumnHandle.get(i)).getValue());
+                                }
+                                return values;
+                            })
+                            .iterator();
+                };
 
                 InMemoryRecordSet recordSet = new InMemoryRecordSet(partitionColumnTypes, records);
                 return recordSet.cursor();
