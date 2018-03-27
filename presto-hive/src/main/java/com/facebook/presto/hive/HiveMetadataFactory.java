@@ -50,6 +50,7 @@ public class HiveMetadataFactory
     private final BoundedExecutor renameExecution;
     private final TypeTranslator typeTranslator;
     private final String prestoVersion;
+    private final int maxPartitions;
 
     @Inject
     @SuppressWarnings("deprecation")
@@ -84,7 +85,8 @@ public class HiveMetadataFactory
                 partitionUpdateCodec,
                 executorService,
                 typeTranslator,
-                nodeVersion.toString());
+                nodeVersion.toString(),
+                hiveClientConfig.getMaxPartitionsPerScan());
     }
 
     public HiveMetadataFactory(
@@ -105,7 +107,8 @@ public class HiveMetadataFactory
             JsonCodec<PartitionUpdate> partitionUpdateCodec,
             ExecutorService executorService,
             TypeTranslator typeTranslator,
-            String prestoVersion)
+            String prestoVersion,
+            int maxPartitions)
     {
         this.allowCorruptWritesForTesting = allowCorruptWritesForTesting;
         this.skipDeletionForAlter = skipDeletionForAlter;
@@ -124,6 +127,7 @@ public class HiveMetadataFactory
         this.partitionUpdateCodec = requireNonNull(partitionUpdateCodec, "partitionUpdateCodec is null");
         this.typeTranslator = requireNonNull(typeTranslator, "typeTranslator is null");
         this.prestoVersion = requireNonNull(prestoVersion, "prestoVersion is null");
+        this.maxPartitions = maxPartitions;
 
         if (!allowCorruptWritesForTesting && !timeZone.equals(DateTimeZone.getDefault())) {
             log.warn("Hive writes are disabled. " +
@@ -158,6 +162,7 @@ public class HiveMetadataFactory
                 partitionUpdateCodec,
                 typeTranslator,
                 prestoVersion,
-                new MetastoreHiveStatisticsProvider(typeManager, metastore, timeZone));
+                new MetastoreHiveStatisticsProvider(typeManager, metastore, timeZone),
+                maxPartitions);
     }
 }
