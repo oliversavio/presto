@@ -40,6 +40,7 @@ import static com.facebook.presto.connector.system.SystemColumnHandle.toSystemCo
 import static com.facebook.presto.metadata.MetadataUtil.findColumnMetadata;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
 
 public class SystemTablesMetadata
@@ -140,6 +141,15 @@ public class SystemTablesMetadata
     public Map<SchemaTableName, List<ColumnMetadata>> listTableColumns(ConnectorSession session, SchemaTablePrefix prefix)
     {
         requireNonNull(prefix, "prefix is null");
+
+        if (prefix.getTableName() != null) {
+            // if table is concrete we just use tables.getSystemTable to support tables which are not listable
+            SchemaTableName tableName = prefix.toSchemaTableName();
+            return tables.getSystemTable(session, tableName)
+                    .map(systemTable -> singletonMap(tableName, systemTable.getTableMetadata().getColumns()))
+                    .orElseGet(ImmutableMap::of);
+        }
+
         ImmutableMap.Builder<SchemaTableName, List<ColumnMetadata>> builder = ImmutableMap.builder();
         for (SystemTable table : tables.listSystemTables(session)) {
             ConnectorTableMetadata tableMetadata = table.getTableMetadata();
