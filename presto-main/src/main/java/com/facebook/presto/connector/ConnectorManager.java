@@ -14,7 +14,11 @@
 package com.facebook.presto.connector;
 
 import com.facebook.presto.connector.informationSchema.InformationSchemaConnector;
+import com.facebook.presto.connector.system.DelegatingSystemTablesProvider;
+import com.facebook.presto.connector.system.MetadataBasedSystemTablesProvider;
+import com.facebook.presto.connector.system.StaticSystemTablesProvider;
 import com.facebook.presto.connector.system.SystemConnector;
+import com.facebook.presto.connector.system.SystemTablesProvider;
 import com.facebook.presto.index.IndexManager;
 import com.facebook.presto.metadata.Catalog;
 import com.facebook.presto.metadata.CatalogManager;
@@ -195,10 +199,13 @@ public class ConnectorManager
                 new InformationSchemaConnector(catalogName, nodeManager, metadataManager, accessControlManager));
 
         ConnectorId systemId = createSystemTablesConnectorId(connectorId);
+        SystemTablesProvider staticProvider = new StaticSystemTablesProvider(connector.getSystemTables());
+        SystemTablesProvider metadataBasedProvider = new MetadataBasedSystemTablesProvider(metadataManager, catalogName);
+        SystemTablesProvider systemTablesProvider = new DelegatingSystemTablesProvider(staticProvider, metadataBasedProvider);
         MaterializedConnector systemConnector = new MaterializedConnector(systemId, new SystemConnector(
                 systemId,
                 nodeManager,
-                connector.getSystemTables(),
+                systemTablesProvider,
                 transactionId -> transactionManager.getConnectorTransaction(transactionId, connectorId)));
 
         Catalog catalog = new Catalog(
