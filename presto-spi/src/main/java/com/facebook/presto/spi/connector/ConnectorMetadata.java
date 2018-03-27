@@ -31,6 +31,7 @@ import com.facebook.presto.spi.Constraint;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.SchemaTablePrefix;
+import com.facebook.presto.spi.SystemTable;
 import com.facebook.presto.spi.TableIdentity;
 import com.facebook.presto.spi.predicate.TupleDomain;
 import com.facebook.presto.spi.security.GrantInfo;
@@ -73,6 +74,16 @@ public interface ConnectorMetadata
      * Returns a table handle for the specified table name, or null if the connector does not contain the table.
      */
     ConnectorTableHandle getTableHandle(ConnectorSession session, SchemaTableName tableName);
+
+    /**
+     * Returns system table for the specified table name, or Optional.empty() if connector does not expose the table.
+     * The system tables exposed via `getSystemTable` method are different from those exposed via `Connector.getSystemTables` in
+     * a way that they coexist with the normal tables in the same schema.
+     */
+    default Optional<SystemTable> getSystemTable(ConnectorSession session, SchemaTableName tableName)
+    {
+        return Optional.empty();
+    }
 
     /**
      * Return a list of table layouts that satisfy the given constraint.
