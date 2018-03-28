@@ -39,6 +39,7 @@ public class HiveMetadataFactory
     private final boolean writesToNonManagedTablesEnabled;
     private final boolean createsOfNonManagedTablesEnabled;
     private final long perTransactionCacheMaximumSize;
+    private final int maxPartitions;
     private final ExtendedHiveMetastore metastore;
     private final HdfsEnvironment hdfsEnvironment;
     private final HivePartitionManager partitionManager;
@@ -50,7 +51,6 @@ public class HiveMetadataFactory
     private final BoundedExecutor renameExecution;
     private final TypeTranslator typeTranslator;
     private final String prestoVersion;
-    private final int maxPartitions;
 
     @Inject
     @SuppressWarnings("deprecation")
@@ -79,14 +79,14 @@ public class HiveMetadataFactory
                 hiveClientConfig.getWritesToNonManagedTablesEnabled(),
                 hiveClientConfig.getCreatesOfNonManagedTablesEnabled(),
                 hiveClientConfig.getPerTransactionMetastoreCacheMaximumSize(),
+                hiveClientConfig.getMaxPartitionsPerScan(),
                 typeManager,
                 locationService,
                 tableParameterCodec,
                 partitionUpdateCodec,
                 executorService,
                 typeTranslator,
-                nodeVersion.toString(),
-                hiveClientConfig.getMaxPartitionsPerScan());
+                nodeVersion.toString());
     }
 
     public HiveMetadataFactory(
@@ -101,14 +101,14 @@ public class HiveMetadataFactory
             boolean writesToNonManagedTablesEnabled,
             boolean createsOfNonManagedTablesEnabled,
             long perTransactionCacheMaximumSize,
+            int maxPartitions,
             TypeManager typeManager,
             LocationService locationService,
             TableParameterCodec tableParameterCodec,
             JsonCodec<PartitionUpdate> partitionUpdateCodec,
             ExecutorService executorService,
             TypeTranslator typeTranslator,
-            String prestoVersion,
-            int maxPartitions)
+            String prestoVersion)
     {
         this.allowCorruptWritesForTesting = allowCorruptWritesForTesting;
         this.skipDeletionForAlter = skipDeletionForAlter;
