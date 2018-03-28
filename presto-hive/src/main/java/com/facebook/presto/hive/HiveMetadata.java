@@ -259,7 +259,7 @@ public class HiveMetadata
         return new HiveTableHandle(tableName.getSchemaName(), tableName.getTableName());
     }
 
-    private static final String PARTITIONS_TABLE_SUFFIX = "$partitions";
+    public static final String PARTITIONS_TABLE_SUFFIX = "$partitions";
 
     @Override
     public Optional<SystemTable> getSystemTable(ConnectorSession session, SchemaTableName tableName)

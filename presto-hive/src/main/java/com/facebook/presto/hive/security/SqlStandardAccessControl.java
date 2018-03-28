@@ -14,6 +14,7 @@
 package com.facebook.presto.hive.security;
 
 import com.facebook.presto.hive.HiveConnectorId;
+import com.facebook.presto.hive.HiveMetadata;
 import com.facebook.presto.hive.HiveTransactionHandle;
 import com.facebook.presto.hive.metastore.ExtendedHiveMetastore;
 import com.facebook.presto.hive.metastore.HivePrivilegeInfo;
@@ -306,6 +307,10 @@ public class SqlStandardAccessControl
     private boolean checkTablePermission(ConnectorTransactionHandle transaction, Identity identity, SchemaTableName tableName, HivePrivilege... requiredPrivileges)
     {
         if (INFORMATION_SCHEMA_NAME.equals(tableName.getSchemaName())) {
+            return true;
+        }
+
+        if (tableName.getTableName().endsWith(HiveMetadata.PARTITIONS_TABLE_SUFFIX)) {
             return true;
         }
 
