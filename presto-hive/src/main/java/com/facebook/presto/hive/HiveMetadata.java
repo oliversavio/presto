@@ -297,11 +297,11 @@ public class HiveMetadata
                 .collect(toImmutableList());
 
         List<ColumnMetadata> partitionSystemTableColumns = partitionColumns.stream()
-                .map(col -> new ColumnMetadata(
-                        col.getName(),
-                        typeManager.getType(col.getTypeSignature()),
-                        col.getComment().orElse(""),
-                        col.isHidden()))
+                .map(column -> new ColumnMetadata(
+                        column.getName(),
+                        typeManager.getType(column.getTypeSignature()),
+                        column.getComment().orElse(""),
+                        column.isHidden()))
                 .collect(toImmutableList());
 
         ImmutableMap.Builder<Integer, HiveColumnHandle> fieldIdToColumnHandleBuilder = ImmutableMap.builder();
