@@ -589,7 +589,7 @@ public abstract class AbstractTestHiveClient
                 false,
                 true,
                 1000,
-                100000,
+                new HiveClientConfig().getMaxPartitionsPerScan(),
                 TYPE_MANAGER,
                 locationService,
                 new TableParameterCodec(),
