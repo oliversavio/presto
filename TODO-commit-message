@@ -1,0 +1,6 @@
+Use DelegatingSystemTablesProvider in ConnectorManager
+
+Use SystemTablesProvider which delegates to:
+ - StaticSystemTablesProvider (which uses static list of SystemTables)
+ - MetadataBasedSystemTablesProvider (which delegates to
+   Metadata.getSystemTable).
