@@ -162,6 +162,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.Iterables.concat;
+import static com.google.common.collect.Streams.mapWithIndex;
 import static com.google.common.collect.Streams.stream;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -333,18 +334,15 @@ public class HiveMetadata
                     Predicate<Map<ColumnHandle, NullableValue>> targetPredicate = convertToPredicate(targetTupleDomain);
                     Constraint<ColumnHandle> targetConstraint = new Constraint<>(targetTupleDomain, targetPredicate);
                     return stream(partitionManager.getPartitions(metastore, sourceTableHandle, targetConstraint).getPartitions())
-                            .map(hivePartition -> {
-                                List<Object> values = new ArrayList<>();
-                                for (int i = 0; i < partitionColumns.size(); ++i) {
-                                    values.add(hivePartition.getKeys().get(fieldIdToColumnHandle.get(i)).getValue());
-                                }
-                                return values;
-                            })
+                            .map(hivePartition ->
+                                    (List<Object>) IntStream.range(0, partitionColumns.size())
+                                            .mapToObj(fieldIdToColumnHandle::get)
+                                            .map(columnHandle -> hivePartition.getKeys().get(columnHandle).getValue())
+                                            .collect(toImmutableList()))
                             .iterator();
                 };
 
-                InMemoryRecordSet recordSet = new InMemoryRecordSet(partitionColumnTypes, records);
-                return recordSet.cursor();
+                return new InMemoryRecordSet(partitionColumnTypes, records).cursor();
             }
         };
         return Optional.of(partitionsSystemTable);
