@@ -39,8 +39,8 @@ import java.util.List;
 import java.util.Map;
 
 import static com.facebook.presto.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
+import static com.facebook.presto.spi.StandardErrorCode.NOT_FOUND;
 import static com.facebook.presto.spi.predicate.TupleDomain.withColumnDomains;
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -62,9 +62,9 @@ public class SystemPageSourceProvider
         SystemTransactionHandle systemTransaction = (SystemTransactionHandle) transactionHandle;
         SystemSplit systemSplit = (SystemSplit) split;
         SchemaTableName tableName = systemSplit.getTableHandle().getSchemaTableName();
-        SystemTable systemTable = tables.getSystemTable(session, tableName).orElseThrow(() -> new IllegalArgumentException("table " + tableName + " not found"));
+        SystemTable systemTable = tables.getSystemTable(session, tableName)
+                .orElseThrow(() -> new PrestoException(NOT_FOUND, format("Table %s not found", tableName)));
 
-        checkArgument(systemTable != null, "Table %s does not exist", tableName);
         List<ColumnMetadata> tableColumns = systemTable.getTableMetadata().getColumns();
 
         Map<String, Integer> columnsByName = new HashMap<>();
