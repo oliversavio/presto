@@ -141,9 +141,8 @@ public class HivePartitionManager
 
         List<String> partitionNames = getFilteredPartitionNames(metastore, tableName, partitionColumns, effectivePredicate);
 
-        // do a final pass to filter based on fields that could not be used to filter the partitions
-
         Iterable<HivePartition> partitionsIterable = () -> partitionNames.stream()
+                // Apply extra filters which could not be done by getFilteredPartitionNames
                 .map(partitionName -> parseValuesAndFilterPartition(partitionName, partitionColumns, partitionTypes, constraint))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
