@@ -34,7 +34,7 @@ public class DelegatingSystemTablesProvider
 
     public DelegatingSystemTablesProvider(SystemTablesProvider... delegates)
     {
-        this(Arrays.asList(delegates));
+        this(ImmutableList.copyOf(delegates));
     }
 
     public DelegatingSystemTablesProvider(List<SystemTablesProvider> delegates)

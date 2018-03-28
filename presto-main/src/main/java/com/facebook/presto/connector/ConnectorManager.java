@@ -199,9 +199,9 @@ public class ConnectorManager
                 new InformationSchemaConnector(catalogName, nodeManager, metadataManager, accessControlManager));
 
         ConnectorId systemId = createSystemTablesConnectorId(connectorId);
-        SystemTablesProvider staticProvider = new StaticSystemTablesProvider(connector.getSystemTables());
-        SystemTablesProvider metadataBasedProvider = new MetadataBasedSystemTablesProvider(metadataManager, catalogName);
-        SystemTablesProvider systemTablesProvider = new DelegatingSystemTablesProvider(staticProvider, metadataBasedProvider);
+        SystemTablesProvider systemTablesProvider = new DelegatingSystemTablesProvider(
+                new StaticSystemTablesProvider(connector.getSystemTables()),
+                new MetadataBasedSystemTablesProvider(metadataManager, catalogName));
         MaterializedConnector systemConnector = new MaterializedConnector(systemId, new SystemConnector(
                 systemId,
                 nodeManager,
