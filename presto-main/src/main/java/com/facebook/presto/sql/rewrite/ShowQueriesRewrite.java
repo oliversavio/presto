@@ -357,12 +357,14 @@ final class ShowQueriesRewrite
         protected Node visitShowPartitions(ShowPartitions showPartitions, Void context)
         {
             QualifiedObjectName table = createQualifiedObjectName(session, showPartitions, showPartitions.getTable());
-            metadata.getTableHandle(session, table)
-                    .orElseThrow(() -> new SemanticException(MISSING_TABLE, showPartitions, "Table '%s' does not exist", table));
+            if (!metadata.getTableHandle(session, table).isPresent()) {
+                throw new SemanticException(MISSING_TABLE, showPartitions, "Table '%s' does not exist", table)
+            }
 
             QualifiedObjectName partitionsTable = new QualifiedObjectName(table.getCatalogName(), table.getSchemaName(), table.getObjectName() + "$partitions");
-            metadata.getTableHandle(session, partitionsTable)
-                    .orElseThrow(() -> new SemanticException(NOT_SUPPORTED, showPartitions, "Table '%s' is not partitioned ", table));
+            if (!metadata.getTableHandle(session, partitionsTable).isPresent()) {
+                throw new SemanticException(NOT_SUPPORTED, showPartitions, "Table '%s' is not partitioned ", table);
+            }
 
             return simpleQuery(
                     selectList(new AllColumns()),
