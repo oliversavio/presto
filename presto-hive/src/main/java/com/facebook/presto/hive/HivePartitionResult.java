@@ -76,13 +76,14 @@ public class HivePartitionResult
         Iterator<HivePartition> iterator = partitions.iterator();
         while (iterator.hasNext()) {
             HivePartition partition = iterator.next();
-            partitionList.add(partition);
-            if (count++ == maxSize) {
+            if (count == maxSize) {
                 throw new PrestoException(HIVE_EXCEEDED_PARTITION_LIMIT, format(
                         "Query over table '%s' can potentially read more than %s partitions",
                         partition.getTableName(),
                         maxSize));
             }
+            partitionList.add(partition);
+            count++;
         }
         return partitionList.build();
     }
