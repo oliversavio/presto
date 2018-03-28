@@ -55,14 +55,6 @@ public class SystemTablesMetadata
         this.tables = requireNonNull(tables, "tables is null");
     }
 
-    private SystemTable checkAndGetTable(ConnectorSession session, ConnectorTableHandle tableHandle)
-    {
-        SystemTableHandle systemTableHandle = (SystemTableHandle) tableHandle;
-        Optional<SystemTable> table = tables.getSystemTable(session, systemTableHandle.getSchemaTableName());
-        checkArgument(table.isPresent());
-        return table.get();
-    }
-
     @Override
     public List<String> listSchemaNames(ConnectorSession session)
     {
@@ -134,6 +126,14 @@ public class SystemTablesMetadata
     {
         ConnectorTableMetadata tableMetadata = checkAndGetTable(session, tableHandle).getTableMetadata();
         return toSystemColumnHandles(((SystemTableHandle) tableHandle).getConnectorId(), tableMetadata);
+    }
+
+    private SystemTable checkAndGetTable(ConnectorSession session, ConnectorTableHandle tableHandle)
+    {
+        SystemTableHandle systemTableHandle = (SystemTableHandle) tableHandle;
+        Optional<SystemTable> table = tables.getSystemTable(session, systemTableHandle.getSchemaTableName());
+        checkArgument(table.isPresent());
+        return table.get();
     }
 
     @Override
