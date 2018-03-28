@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static com.facebook.presto.connector.system.SystemColumnHandle.toSystemColumnHandles;
 import static com.facebook.presto.metadata.MetadataUtil.findColumnMetadata;
@@ -100,16 +99,11 @@ public class SystemTablesMetadata
     @Override
     public List<SchemaTableName> listTables(ConnectorSession session, String schemaNameOrNull)
     {
-        Stream<SchemaTableName> stream = tables.listSystemTables(session).stream()
+        return tables.listSystemTables(session).stream()
                 .map(SystemTable::getTableMetadata)
-                .map(ConnectorTableMetadata::getTable);
-
-        if (schemaNameOrNull != null) {
-            stream = stream
-                    .filter(table -> table.getSchemaName().equals(schemaNameOrNull));
-        }
-
-        return stream.collect(toImmutableList());
+                .map(ConnectorTableMetadata::getTable)
+                .filter(table -> schemaNameOrNull == null || table.getSchemaName().equals(schemaNameOrNull))
+                .collect(toImmutableList());
     }
 
     @Override
