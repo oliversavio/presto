@@ -26,8 +26,8 @@ public interface SystemTablesProvider
 
     /**
      * Resolves table name. Returns {@link Optional#empty()} if table is not found.
-     * Some tables which are not part of {@link #listSystemTables(ConnectorSession)} can still
-     * be validly resolved.
+     * Some tables which are not part of set returned by {@link #listSystemTables(ConnectorSession)}
+     * can still be validly resolved.
      */
     Optional<SystemTable> getSystemTable(ConnectorSession session, SchemaTableName tableName);
 }
