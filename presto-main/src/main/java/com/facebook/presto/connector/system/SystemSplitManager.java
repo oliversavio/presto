@@ -61,6 +61,7 @@ public class SystemSplitManager
 
         TupleDomain<ColumnHandle> constraint = layoutHandle.getConstraint();
         SystemTable systemTable = tables.getSystemTable(session, tableHandle.getSchemaTableName())
+                // table might disappear in the meantime
                 .orElseThrow(() -> new PrestoException(NOT_FOUND, format("Table %s not found", tableHandle.getSchemaTableName())));
 
         Distribution tableDistributionMode = systemTable.getDistribution();
