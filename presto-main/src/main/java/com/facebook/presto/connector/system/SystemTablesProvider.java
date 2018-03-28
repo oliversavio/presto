@@ -22,9 +22,6 @@ import java.util.Set;
 
 public interface SystemTablesProvider
 {
-    /**
-     * Lists system tables;
-     */
     Set<SystemTable> listSystemTables(ConnectorSession session);
 
     /**
