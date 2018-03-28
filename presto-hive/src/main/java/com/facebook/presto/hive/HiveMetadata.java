@@ -92,6 +92,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.facebook.presto.hive.HiveBucketing.getHiveBucketHandle;
 import static com.facebook.presto.hive.HiveColumnHandle.BUCKET_COLUMN_NAME;
@@ -165,6 +166,7 @@ import static com.google.common.collect.Streams.stream;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -304,13 +306,10 @@ public class HiveMetadata
                         column.isHidden()))
                 .collect(toImmutableList());
 
-        ImmutableMap.Builder<Integer, HiveColumnHandle> fieldIdToColumnHandleBuilder = ImmutableMap.builder();
-        int fieldId = 0;
-        for (HiveColumnHandle columnHandle : partitionColumns) {
-            fieldIdToColumnHandleBuilder.put(fieldId, columnHandle);
-            fieldId++;
-        }
-        Map<Integer, HiveColumnHandle> fieldIdToColumnHandle = fieldIdToColumnHandleBuilder.build();
+        Map<Integer, HiveColumnHandle> fieldIdToColumnHandle =
+                IntStream.range(0, partitionColumns.size())
+                        .boxed()
+                        .collect(toImmutableMap(identity(), partitionColumns::get));
 
         SystemTable partitionsSystemTable = new SystemTable()
         {
@@ -1344,7 +1343,7 @@ public class HiveMetadata
         return withColumnDomains(
                 partitionColumns.stream()
                         .collect(Collectors.toMap(
-                                Function.identity(),
+                                identity(),
                                 column -> buildColumnDomain(column, partitions))));
     }
 
