@@ -81,6 +81,7 @@ import com.facebook.presto.sql.planner.iterative.rule.SimplifyCountOverConstant;
 import com.facebook.presto.sql.planner.iterative.rule.SimplifyExpressions;
 import com.facebook.presto.sql.planner.iterative.rule.SingleDistinctAggregationToGroupBy;
 import com.facebook.presto.sql.planner.iterative.rule.TransformCorrelatedInPredicateToJoin;
+import com.facebook.presto.sql.planner.iterative.rule.TransformCorrelatedLateralJoinToJoin;
 import com.facebook.presto.sql.planner.iterative.rule.TransformCorrelatedScalarAggregationToJoin;
 import com.facebook.presto.sql.planner.iterative.rule.TransformExistsApplyToLateralNode;
 import com.facebook.presto.sql.planner.iterative.rule.TransformSpatialPredicateToJoin;
@@ -287,7 +288,8 @@ public class PlanOptimizers
                                 new RemoveUnreferencedScalarLateralNodes(),
                                 new TransformUncorrelatedLateralToJoin(),
                                 new TransformUncorrelatedInPredicateSubqueryToSemiJoin(),
-                                new TransformCorrelatedScalarAggregationToJoin(metadata.getFunctionRegistry()))),
+                                new TransformCorrelatedScalarAggregationToJoin(metadata.getFunctionRegistry()),
+                                new TransformCorrelatedLateralJoinToJoin())),
                 new IterativeOptimizer(
                         stats,
                         statsCalculator,
