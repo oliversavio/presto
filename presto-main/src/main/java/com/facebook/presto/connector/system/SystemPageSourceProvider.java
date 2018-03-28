@@ -63,6 +63,7 @@ public class SystemPageSourceProvider
         SystemSplit systemSplit = (SystemSplit) split;
         SchemaTableName tableName = systemSplit.getTableHandle().getSchemaTableName();
         SystemTable systemTable = tables.getSystemTable(session, tableName)
+                // table might disappear in the meantime
                 .orElseThrow(() -> new PrestoException(NOT_FOUND, format("Table %s not found", tableName)));
 
         List<ColumnMetadata> tableColumns = systemTable.getTableMetadata().getColumns();

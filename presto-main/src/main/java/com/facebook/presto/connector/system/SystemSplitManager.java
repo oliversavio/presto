@@ -22,6 +22,7 @@ import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.facebook.presto.spi.FixedSplitSource;
 import com.facebook.presto.spi.HostAddress;
 import com.facebook.presto.spi.Node;
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SystemTable;
 import com.facebook.presto.spi.SystemTable.Distribution;
 import com.facebook.presto.spi.connector.ConnectorSplitManager;
@@ -33,9 +34,11 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 
 import static com.facebook.presto.spi.NodeState.ACTIVE;
+import static com.facebook.presto.spi.StandardErrorCode.NOT_FOUND;
 import static com.facebook.presto.spi.SystemTable.Distribution.ALL_COORDINATORS;
 import static com.facebook.presto.spi.SystemTable.Distribution.ALL_NODES;
 import static com.facebook.presto.spi.SystemTable.Distribution.SINGLE_COORDINATOR;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class SystemSplitManager
@@ -57,7 +60,8 @@ public class SystemSplitManager
         SystemTableHandle tableHandle = layoutHandle.getTable();
 
         TupleDomain<ColumnHandle> constraint = layoutHandle.getConstraint();
-        SystemTable systemTable = tables.getSystemTable(session, tableHandle.getSchemaTableName()).orElseThrow(() -> new IllegalArgumentException("no table found for " + tableHandle));
+        SystemTable systemTable = tables.getSystemTable(session, tableHandle.getSchemaTableName())
+                .orElseThrow(() -> new PrestoException(NOT_FOUND, format("Table %s not found", tableHandle.getSchemaTableName())));
 
         Distribution tableDistributionMode = systemTable.getDistribution();
         if (tableDistributionMode == SINGLE_COORDINATOR) {
