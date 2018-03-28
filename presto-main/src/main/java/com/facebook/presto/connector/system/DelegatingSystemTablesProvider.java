@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.common.collect.MoreCollectors.toOptional;
 import static java.util.Objects.requireNonNull;
 
 public class DelegatingSystemTablesProvider
@@ -54,12 +55,11 @@ public class DelegatingSystemTablesProvider
     @Override
     public Optional<SystemTable> getSystemTable(ConnectorSession session, SchemaTableName tableName)
     {
-        for (SystemTablesProvider delegate : delegates) {
-            Optional<SystemTable> table = delegate.getSystemTable(session, tableName);
-            if (table.isPresent()) {
-                return table;
-            }
-        }
-        return Optional.empty();
+        return delegates.stream()
+                .map(delegate -> delegate.getSystemTable(session, tableName))
+                .filter(Optional::isPresent)
+                // this ensures there is 0 or 1 element in stream
+                .map(Optional::get)
+                .collect(toOptional());
     }
 }
