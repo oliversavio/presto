@@ -69,7 +69,6 @@ import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
 import static com.facebook.presto.spi.type.Chars.padSpaces;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Predicates.not;
-import static com.google.common.collect.Iterators.singletonIterator;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
@@ -129,7 +128,7 @@ public class HivePartitionManager
         if (partitionColumns.isEmpty()) {
             return new HivePartitionResult(
                     partitionColumns,
-                    () -> singletonIterator(new HivePartition(tableName, buckets)),
+                    ImmutableList.of(new HivePartition(tableName, buckets)),
                     compactEffectivePredicate,
                     effectivePredicate,
                     TupleDomain.none(),
