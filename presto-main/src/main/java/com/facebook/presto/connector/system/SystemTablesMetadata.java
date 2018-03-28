@@ -47,7 +47,6 @@ public class SystemTablesMetadata
         implements ConnectorMetadata
 {
     private final ConnectorId connectorId;
-
     private final SystemTablesProvider tables;
 
     public SystemTablesMetadata(ConnectorId connectorId, SystemTablesProvider tables)
