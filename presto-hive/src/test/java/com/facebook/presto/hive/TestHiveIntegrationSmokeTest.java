@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.LongStream;
 
 import static com.facebook.presto.SystemSessionProperties.COLOCATED_JOIN;
 import static com.facebook.presto.SystemSessionProperties.CONCURRENT_LIFESPANS_PER_NODE;
@@ -82,6 +83,7 @@ import static io.airlift.tpch.TpchTable.ORDERS;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -1169,6 +1171,21 @@ public class TestHiveIntegrationSmokeTest
                 session,
                 "SHOW PARTITIONS FROM " + tableName + " WHERE part < 0",
                 "SELECT null WHERE false");
+
+        assertQuery(
+                session,
+                "SHOW PARTITIONS FROM " + tableName,
+                "VALUES " + LongStream.range(0, 1200)
+                        .mapToObj(String::valueOf)
+                        .collect(joining(",")));
+
+        assertQuery(
+                session,
+                "SELECT * FROM " + tableName,
+                "VALUES " + LongStream.range(0, 1200)
+                        .mapToObj(String::valueOf)
+                        .collect(joining(",")));
+
 
         // verify can query 1000 partitions
         assertQuery(
