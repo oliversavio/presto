@@ -143,10 +143,9 @@ public class HivePartitionManager
 
         Iterable<HivePartition> partitionsIterable = () -> partitionNames.stream()
                 // Apply extra filters which could not be done by getFilteredPartitionNames
-                .map(partitionName -> parseValuesAndFilterPartition(partitionName, partitionColumns, partitionTypes, constraint))
+                .map(partitionName -> parseValuesAndFilterPartition(tableName, partitionName, partitionColumns, partitionTypes, constraint, buckets))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .map(partitionNameAndValues -> new HivePartition(tableName, partitionNameAndValues.partitionName, partitionNameAndValues.values, buckets))
                 .iterator();
 
         // All partition key domains will be fully evaluated, so we don't need to include those
@@ -174,27 +173,21 @@ public class HivePartitionManager
         return TupleDomain.withColumnDomains(builder.build());
     }
 
-    private static class PartitionNameAndValues
+    private Optional<HivePartition> parseValuesAndFilterPartition(
+            SchemaTableName tableName,
+            String partitionId,
+            List<HiveColumnHandle> partitionColumns,
+            List<Type> partitionColumnTypes,
+            Constraint<ColumnHandle> constraint,
+            List<HiveBucket> buckets)
     {
-        public String partitionName;
-        public Map<ColumnHandle, NullableValue> values;
-
-        public PartitionNameAndValues(String partitionName, Map<ColumnHandle, NullableValue> values)
-        {
-            this.partitionName = requireNonNull(partitionName, "partitionName is null");
-            this.values = requireNonNull(values, "values is null");
-        }
-    }
-
-    private Optional<PartitionNameAndValues> parseValuesAndFilterPartition(String partitionName, List<HiveColumnHandle> partitionColumns, List<Type> partitionTypes, Constraint<ColumnHandle> constraint)
-    {
-        List<String> partitionValues = extractPartitionKeyValues(partitionName);
+        List<String> keys = extractPartitionKeyValues(partitionId);
 
         Map<ColumnHandle, Domain> domains = constraint.getSummary().getDomains().get();
         ImmutableMap.Builder<ColumnHandle, NullableValue> builder = ImmutableMap.builder();
         for (int i = 0; i < partitionColumns.size(); i++) {
             HiveColumnHandle column = partitionColumns.get(i);
-            NullableValue parsedValue = parsePartitionValue(partitionName, partitionValues.get(i), partitionTypes.get(i), timeZone);
+            NullableValue parsedValue = parsePartitionValue(partitionId, keys.get(i), partitionColumnTypes.get(i), timeZone);
 
             Domain allowedDomain = domains.get(column);
             if (allowedDomain != null && !allowedDomain.includesNullableValue(parsedValue.getValue())) {
@@ -208,7 +201,7 @@ public class HivePartitionManager
             return Optional.empty();
         }
 
-        return Optional.of(new PartitionNameAndValues(partitionName, values));
+        return Optional.of(new HivePartition(tableName, partitionId, values, buckets));
     }
 
     private Table getTable(SemiTransactionalHiveMetastore metastore, SchemaTableName tableName)
