@@ -358,7 +358,7 @@ final class ShowQueriesRewrite
         {
             QualifiedObjectName table = createQualifiedObjectName(session, showPartitions, showPartitions.getTable());
             if (!metadata.getTableHandle(session, table).isPresent()) {
-                throw new SemanticException(MISSING_TABLE, showPartitions, "Table '%s' does not exist", table)
+                throw new SemanticException(MISSING_TABLE, showPartitions, "Table '%s' does not exist", table);
             }
 
             QualifiedObjectName partitionsTable = new QualifiedObjectName(table.getCatalogName(), table.getSchemaName(), table.getObjectName() + "$partitions");
