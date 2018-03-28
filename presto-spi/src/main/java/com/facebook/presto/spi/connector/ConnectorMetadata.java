@@ -76,9 +76,10 @@ public interface ConnectorMetadata
     ConnectorTableHandle getTableHandle(ConnectorSession session, SchemaTableName tableName);
 
     /**
-     * Returns system table for the specified table name, or Optional.empty() if connector does not expose the table.
-     * The system tables exposed via `getSystemTable` method are different from those exposed via `Connector.getSystemTables` in
-     * a way that they coexist with the normal tables in the same schema.
+     * Returns the system table for the specified table name, if one exists.
+     * The system tables handled via {@link #getSystemTable} differ form those returned by {@link Connector#getSystemTables()}.
+     * The former mechanism allows dynamic resolution of system tables, while the latter is
+     * based on static list of system tables built during startup.
      */
     default Optional<SystemTable> getSystemTable(ConnectorSession session, SchemaTableName tableName)
     {
