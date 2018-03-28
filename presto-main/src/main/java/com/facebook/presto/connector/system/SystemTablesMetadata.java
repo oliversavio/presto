@@ -23,6 +23,7 @@ import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.facebook.presto.spi.ConnectorTableLayoutResult;
 import com.facebook.presto.spi.ConnectorTableMetadata;
 import com.facebook.presto.spi.Constraint;
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.SchemaTablePrefix;
 import com.facebook.presto.spi.SystemTable;
@@ -38,8 +39,10 @@ import java.util.stream.Stream;
 
 import static com.facebook.presto.connector.system.SystemColumnHandle.toSystemColumnHandles;
 import static com.facebook.presto.metadata.MetadataUtil.findColumnMetadata;
+import static com.facebook.presto.spi.StandardErrorCode.NOT_FOUND;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.lang.String.format;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
 
@@ -131,9 +134,9 @@ public class SystemTablesMetadata
     private SystemTable checkAndGetTable(ConnectorSession session, ConnectorTableHandle tableHandle)
     {
         SystemTableHandle systemTableHandle = (SystemTableHandle) tableHandle;
-        Optional<SystemTable> table = tables.getSystemTable(session, systemTableHandle.getSchemaTableName());
-        checkArgument(table.isPresent());
-        return table.get();
+        return tables.getSystemTable(session, systemTableHandle.getSchemaTableName())
+                // table might disappear in the meantime
+                .orElseThrow(() -> new PrestoException(NOT_FOUND, format("Table %s not found", systemTableHandle.getSchemaTableName())));
     }
 
     @Override
