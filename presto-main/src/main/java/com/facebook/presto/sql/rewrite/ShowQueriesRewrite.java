@@ -368,7 +368,7 @@ final class ShowQueriesRewrite
 
             return simpleQuery(
                     selectList(new AllColumns()),
-                    new Table(QualifiedName.of(partitionsTable.getCatalogName(), partitionsTable.getSchemaName(), partitionsTable.getObjectName())),
+                    new Table(createQualifiedName(partitionsTable)),
                     showPartitions.getWhere(),
                     Optional.empty(),
                     Optional.empty(),
