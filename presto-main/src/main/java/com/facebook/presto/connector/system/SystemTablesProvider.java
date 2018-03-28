@@ -25,7 +25,7 @@ public interface SystemTablesProvider
     Set<SystemTable> listSystemTables(ConnectorSession session);
 
     /**
-     * Resolves table name. Returns Optional.empty() if table is not found.
+     * Resolves table name. Returns {@link Optional#empty()} if table is not found.
      * Some tables which are not part of {@link #listSystemTables(ConnectorSession)} can still
      * be validly resolved.
      */
