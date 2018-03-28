@@ -72,12 +72,12 @@ public class HivePartitionResult
     public List<HivePartition> getPartitionsAsList(int maxSize)
     {
         ImmutableList.Builder<HivePartition> partitionList = ImmutableList.builder();
-        int listSize = 0;
+        int count = 0;
         Iterator<HivePartition> iterator = partitions.iterator();
         while (iterator.hasNext()) {
             HivePartition partition = iterator.next();
             partitionList.add(partition);
-            if (listSize++ == maxSize) {
+            if (count++ == maxSize) {
                 throw new PrestoException(HIVE_EXCEEDED_PARTITION_LIMIT, format(
                         "Query over table '%s' can potentially read more than %s partitions",
                         partition.getTableName(),
