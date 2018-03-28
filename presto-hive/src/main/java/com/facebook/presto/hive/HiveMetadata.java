@@ -300,7 +300,7 @@ public class HiveMetadata
                 .map(column -> new ColumnMetadata(
                         column.getName(),
                         typeManager.getType(column.getTypeSignature()),
-                        column.getComment().orElse(""),
+                        column.getComment().orElse(null),
                         column.isHidden()))
                 .collect(toImmutableList());
 
