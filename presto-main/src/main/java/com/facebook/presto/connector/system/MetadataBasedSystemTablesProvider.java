@@ -48,6 +48,8 @@ public class MetadataBasedSystemTablesProvider
     @Override
     public Optional<SystemTable> getSystemTable(ConnectorSession session, SchemaTableName tableName)
     {
-        return metadata.getSystemTable(((FullConnectorSession) session).getSession(), new QualifiedObjectName(catalogName, tableName.getSchemaName(), tableName.getTableName()));
+        return metadata.getSystemTable(
+                ((FullConnectorSession) session).getSession(),
+                new QualifiedObjectName(catalogName, tableName.getSchemaName(), tableName.getTableName()));
     }
 }
