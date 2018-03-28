@@ -272,6 +272,7 @@ public class HiveMetadata
 
     private Optional<SystemTable> getPartitionsSystemTable(ConnectorSession session, SchemaTableName tableName)
     {
+        checkArgument(tableName.getTableName().endsWith(PARTITIONS_TABLE_SUFFIX));
         SchemaTableName sourceTableName = new SchemaTableName(
                 tableName.getSchemaName(),
                 tableName.getTableName().substring(0, tableName.getTableName().length() - PARTITIONS_TABLE_SUFFIX.length()));
