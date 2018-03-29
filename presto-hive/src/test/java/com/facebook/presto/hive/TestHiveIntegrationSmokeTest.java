@@ -1162,7 +1162,7 @@ public class TestHiveIntegrationSmokeTest
             assertUpdate(session, insertPartitions, 100);
         }
 
-        // verify can show partitions
+        // verify can show partitions beyond limit
         assertQuery(
                 session,
                 "SHOW PARTITIONS FROM " + tableName + " WHERE part > 490 and part <= 500",
@@ -1171,6 +1171,13 @@ public class TestHiveIntegrationSmokeTest
                 session,
                 "SHOW PARTITIONS FROM " + tableName + " WHERE part < 0",
                 "SELECT null WHERE false");
+
+        assertQuery(
+                session,
+                "SHOW PARTITIONS FROM " + tableName,
+                "VALUES " + LongStream.range(0, 1200)
+                        .mapToObj(String::valueOf)
+                        .collect(joining(",")));
 
         // using $partitions system table we can read beyond limit
         assertQuery(
