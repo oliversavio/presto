@@ -289,8 +289,7 @@ class SubqueryPlanner
 
         Symbol exists = symbolAllocator.newSymbol("exists", BOOLEAN);
         subPlan.getTranslations().put(existsPredicate, exists);
-        ExistsPredicate rewrittenExistsPredicate = new ExistsPredicate(
-                subqueryPlanRoot.getOutputSymbols().get(0).toSymbolReference());
+        ExistsPredicate rewrittenExistsPredicate = new ExistsPredicate(BooleanLiteral.TRUE_LITERAL);
         return appendApplyNode(
                 subPlan,
                 existsPredicate.getSubquery(),
