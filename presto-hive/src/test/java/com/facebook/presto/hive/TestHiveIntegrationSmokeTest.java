@@ -1186,7 +1186,6 @@ public class TestHiveIntegrationSmokeTest
                         .mapToObj(String::valueOf)
                         .collect(joining(",")));
 
-
         // verify can query 1000 partitions
         assertQuery(
                 session,
