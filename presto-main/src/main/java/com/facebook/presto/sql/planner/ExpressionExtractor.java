@@ -91,6 +91,8 @@ public class ExpressionExtractor
         {
             node.getAggregations().values()
                     .forEach(aggregation -> context.add(aggregation.getCall()));
+            node.getGroupingSets().forEach(groupingSet -> groupingSet
+                    .forEach(symbol -> context.add(symbol.toSymbolReference())));
             return super.visitAggregation(node, context);
         }
 
