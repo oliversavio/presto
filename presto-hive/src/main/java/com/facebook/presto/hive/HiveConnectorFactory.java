@@ -18,6 +18,7 @@ import com.facebook.presto.hive.metastore.ExtendedHiveMetastore;
 import com.facebook.presto.hive.metastore.HiveMetastoreModule;
 import com.facebook.presto.hive.s3.HiveS3Module;
 import com.facebook.presto.hive.security.HiveSecurityModule;
+import com.facebook.presto.hive.security.PartitionsAwareAccessControl;
 import com.facebook.presto.spi.ConnectorHandleResolver;
 import com.facebook.presto.spi.classloader.ThreadContextClassLoader;
 import com.facebook.presto.spi.connector.Connector;
@@ -119,6 +120,10 @@ public class HiveConnectorFactory
             HiveSessionProperties hiveSessionProperties = injector.getInstance(HiveSessionProperties.class);
             HiveTableProperties hiveTableProperties = injector.getInstance(HiveTableProperties.class);
             ConnectorAccessControl accessControl = injector.getInstance(ConnectorAccessControl.class);
+
+            // this is kinda ugly but doing it Guice way is quite messy. We would need to use PrivateModules
+            // binding annotations. This is much simpler.
+            accessControl = new PartitionsAwareAccessControl(accessControl);
 
             return new HiveConnector(
                     lifeCycleManager,

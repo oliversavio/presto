@@ -184,6 +184,8 @@ public class HiveMetadata
     private static final String ORC_BLOOM_FILTER_COLUMNS_KEY = "orc.bloom.filter.columns";
     private static final String ORC_BLOOM_FILTER_FPP_KEY = "orc.bloom.filter.fpp";
 
+    private static final String PARTITIONS_TABLE_SUFFIX = "$partitions";
+
     private final boolean allowCorruptWritesForTesting;
     private final SemiTransactionalHiveMetastore metastore;
     private final HdfsEnvironment hdfsEnvironment;
@@ -262,12 +264,10 @@ public class HiveMetadata
         return new HiveTableHandle(tableName.getSchemaName(), tableName.getTableName());
     }
 
-    private static final String PARTITIONS_TABLE_SUFFIX = "$partitions";
-
     @Override
     public Optional<SystemTable> getSystemTable(ConnectorSession session, SchemaTableName tableName)
     {
-        if (tableName.getTableName().endsWith(PARTITIONS_TABLE_SUFFIX)) {
+        if (isPartitionsSystemTable(tableName)) {
             return getPartitionsSystemTable(session, tableName);
         }
         return Optional.empty();
@@ -275,14 +275,7 @@ public class HiveMetadata
 
     private Optional<SystemTable> getPartitionsSystemTable(ConnectorSession session, SchemaTableName tableName)
     {
-        checkArgument(tableName.getTableName().endsWith(PARTITIONS_TABLE_SUFFIX));
-        if (tableName.getTableName().equals(PARTITIONS_TABLE_SUFFIX)) {
-            return Optional.empty();
-        }
-        SchemaTableName sourceTableName = new SchemaTableName(
-                tableName.getSchemaName(),
-                tableName.getTableName().substring(0, tableName.getTableName().length() - PARTITIONS_TABLE_SUFFIX.length()));
-
+        SchemaTableName sourceTableName = getSourceTableNameForPartitionsTable(tableName);
         HiveTableHandle sourceTableHandle = getTableHandle(session, sourceTableName);
 
         if (sourceTableHandle == null) {
@@ -1609,5 +1602,18 @@ public class HiveMetadata
     public void commit()
     {
         metastore.commit();
+    }
+
+    public static boolean isPartitionsSystemTable(SchemaTableName tableName)
+    {
+        return tableName.getTableName().endsWith(PARTITIONS_TABLE_SUFFIX) && !tableName.getTableName().equals(PARTITIONS_TABLE_SUFFIX);
+    }
+
+    public static SchemaTableName getSourceTableNameForPartitionsTable(SchemaTableName tableName)
+    {
+        checkArgument(isPartitionsSystemTable(tableName), "not a partitions table name");
+        return new SchemaTableName(
+                tableName.getSchemaName(), tableName.getTableName().substring(0,
+                tableName.getTableName().length() - PARTITIONS_TABLE_SUFFIX.length()));
     }
 }
