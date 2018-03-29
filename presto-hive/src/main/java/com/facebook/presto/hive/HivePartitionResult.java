@@ -14,11 +14,16 @@
 package com.facebook.presto.hive;
 
 import com.facebook.presto.spi.ColumnHandle;
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.predicate.TupleDomain;
+import com.google.common.collect.ImmutableList;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
+import static com.facebook.presto.hive.HiveErrorCode.HIVE_EXCEEDED_PARTITION_LIMIT;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -32,7 +37,7 @@ import static java.util.Objects.requireNonNull;
 public class HivePartitionResult
 {
     private final List<HiveColumnHandle> partitionColumns;
-    private final List<HivePartition> partitions;
+    private final Iterable<HivePartition> partitions;
     private final TupleDomain<? extends ColumnHandle> compactEffectivePredicate;
     private final TupleDomain<ColumnHandle> unenforcedConstraint;
     private final TupleDomain<ColumnHandle> enforcedConstraint;
@@ -40,7 +45,7 @@ public class HivePartitionResult
 
     public HivePartitionResult(
             List<HiveColumnHandle> partitionColumns,
-            List<HivePartition> partitions,
+            Iterable<HivePartition> partitions,
             TupleDomain<? extends ColumnHandle> compactEffectivePredicate,
             TupleDomain<ColumnHandle> unenforcedConstraint,
             TupleDomain<ColumnHandle> enforcedConstraint,
@@ -59,9 +64,28 @@ public class HivePartitionResult
         return partitionColumns;
     }
 
-    public List<HivePartition> getPartitions()
+    public Iterator<HivePartition> getPartitions()
     {
-        return partitions;
+        return partitions.iterator();
+    }
+
+    public List<HivePartition> getPartitionsAsList(int maxSize)
+    {
+        ImmutableList.Builder<HivePartition> partitionList = ImmutableList.builder();
+        int count = 0;
+        Iterator<HivePartition> iterator = partitions.iterator();
+        while (iterator.hasNext()) {
+            HivePartition partition = iterator.next();
+            if (count == maxSize) {
+                throw new PrestoException(HIVE_EXCEEDED_PARTITION_LIMIT, format(
+                        "Query over table '%s' can potentially read more than %s partitions",
+                        partition.getTableName(),
+                        maxSize));
+            }
+            partitionList.add(partition);
+            count++;
+        }
+        return partitionList.build();
     }
 
     public TupleDomain<? extends ColumnHandle> getCompactEffectivePredicate()
