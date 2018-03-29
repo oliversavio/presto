@@ -363,7 +363,7 @@ final class ShowQueriesRewrite
 
             QualifiedObjectName partitionsTable = new QualifiedObjectName(table.getCatalogName(), table.getSchemaName(), table.getObjectName() + "$partitions");
             if (!metadata.getTableHandle(session, partitionsTable).isPresent()) {
-                throw new SemanticException(NOT_SUPPORTED, showPartitions, "Table '%s' is not partitioned ", table);
+                throw new SemanticException(NOT_SUPPORTED, showPartitions, "Table does not have partition columns: %s", table);
             }
 
             return simpleQuery(
