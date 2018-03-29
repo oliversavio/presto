@@ -1210,6 +1210,48 @@ public class TestHiveIntegrationSmokeTest
     }
 
     @Test
+    public void testShowColumnsFromPartitions()
+    {
+        String tableName = "test_show_columns_from_partitions";
+
+        @Language("SQL") String createTable = "" +
+                "CREATE TABLE " + tableName + " " +
+                "(" +
+                "  foo VARCHAR," +
+                "  part1 BIGINT," +
+                "  part2 VARCHAR" +
+                ") " +
+                "WITH (" +
+                "partitioned_by = ARRAY[ 'part1', 'part2' ]" +
+                ") ";
+
+        assertUpdate(getSession(), createTable);
+
+        TableMetadata tableMetadata = getTableMetadata(catalog, TPCH_SCHEMA, tableName);
+        assertEquals(tableMetadata.getMetadata().getProperties().get(PARTITIONED_BY_PROPERTY), ImmutableList.of("part1", "part2"));
+
+        assertQuery(
+                getSession(),
+                "SHOW COLUMNS FROM \"" + tableName + "$partitions\"",
+                "VALUES ('part1', 'bigint', '', ''), ('part2', 'varchar', '', '')");
+
+        assertQueryFails(
+                getSession(),
+                "SHOW COLUMNS FROM \"$partitions\"",
+                ".*Table 'hive.tpch.\\$partitions' does not exist");
+
+        assertQueryFails(
+                getSession(),
+                "SHOW COLUMNS FROM \"orders$partitions\"",
+                ".*Table 'hive.tpch.orders\\$partitions' does not exist");
+
+        assertQueryFails(
+                getSession(),
+                "SHOW COLUMNS FROM \"blah$partitions\"",
+                ".*Table 'hive.tpch.blah\\$partitions' does not exist");
+    }
+
+    @Test
     public void testInsertUnpartitionedTable()
     {
         for (TestingHiveStorageFormat storageFormat : getAllTestingHiveStorageFormat()) {
