@@ -329,18 +329,17 @@ public class HiveMetadata
             @Override
             public RecordCursor cursor(ConnectorTransactionHandle transactionHandle, ConnectorSession session, TupleDomain<Integer> constraint)
             {
-                Iterable<List<Object>> records = () -> {
-                    TupleDomain<ColumnHandle> targetTupleDomain = constraint.transform(fieldIdToColumnHandle::get);
-                    Predicate<Map<ColumnHandle, NullableValue>> targetPredicate = convertToPredicate(targetTupleDomain);
-                    Constraint<ColumnHandle> targetConstraint = new Constraint<>(targetTupleDomain, targetPredicate);
-                    return stream(partitionManager.getPartitions(metastore, sourceTableHandle, targetConstraint).getPartitions())
-                            .map(hivePartition ->
-                                    (List<Object>) IntStream.range(0, partitionColumns.size())
-                                            .mapToObj(fieldIdToColumnHandle::get)
-                                            .map(columnHandle -> hivePartition.getKeys().get(columnHandle).getValue())
-                                            .collect(toImmutableList()))
-                            .iterator();
-                };
+                TupleDomain<ColumnHandle> targetTupleDomain = constraint.transform(fieldIdToColumnHandle::get);
+                Predicate<Map<ColumnHandle, NullableValue>> targetPredicate = convertToPredicate(targetTupleDomain);
+                Constraint<ColumnHandle> targetConstraint = new Constraint<>(targetTupleDomain, targetPredicate);
+                Iterable<List<Object>> records = () ->
+                        stream(partitionManager.getPartitions(metastore, sourceTableHandle, targetConstraint).getPartitions())
+                        .map(hivePartition ->
+                                (List<Object>) IntStream.range(0, partitionColumns.size())
+                                        .mapToObj(fieldIdToColumnHandle::get)
+                                        .map(columnHandle -> hivePartition.getKeys().get(columnHandle).getValue())
+                                        .collect(toImmutableList()))
+                        .iterator();
 
                 return new InMemoryRecordSet(partitionColumnTypes, records).cursor();
             }
