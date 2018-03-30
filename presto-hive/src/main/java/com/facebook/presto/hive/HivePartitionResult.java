@@ -14,16 +14,12 @@
 package com.facebook.presto.hive;
 
 import com.facebook.presto.spi.ColumnHandle;
-import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.predicate.TupleDomain;
-import com.google.common.collect.ImmutableList;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
-import static com.facebook.presto.hive.HiveErrorCode.HIVE_EXCEEDED_PARTITION_LIMIT;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -67,25 +63,6 @@ public class HivePartitionResult
     public Iterator<HivePartition> getPartitions()
     {
         return partitions.iterator();
-    }
-
-    public List<HivePartition> getPartitionsAsList(int maxSize)
-    {
-        ImmutableList.Builder<HivePartition> partitionList = ImmutableList.builder();
-        int count = 0;
-        Iterator<HivePartition> iterator = partitions.iterator();
-        while (iterator.hasNext()) {
-            HivePartition partition = iterator.next();
-            if (count == maxSize) {
-                throw new PrestoException(HIVE_EXCEEDED_PARTITION_LIMIT, format(
-                        "Query over table '%s' can potentially read more than %s partitions",
-                        partition.getTableName(),
-                        maxSize));
-            }
-            partitionList.add(partition);
-            count++;
-        }
-        return partitionList.build();
     }
 
     public TupleDomain<? extends ColumnHandle> getCompactEffectivePredicate()
