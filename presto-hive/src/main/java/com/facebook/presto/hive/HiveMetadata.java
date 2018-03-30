@@ -45,6 +45,7 @@ import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.SchemaTablePrefix;
+import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.SystemTable;
 import com.facebook.presto.spi.TableNotFoundException;
 import com.facebook.presto.spi.ViewNotFoundException;
@@ -259,6 +260,12 @@ public class HiveMetadata
         if (!table.isPresent()) {
             return null;
         }
+
+        if (isPartitionsSystemTable(tableName)) {
+            // We must not allow $partitions table due to how permissions are checked in PartitionsAwareAccessControl.checkCanSelectFromTable()
+            throw new PrestoException(StandardErrorCode.NOT_SUPPORTED, String.format("Unexpected table %s present in Hive metastore", tableName));
+        }
+
         verifyOnline(tableName, Optional.empty(), getProtectMode(table.get()), table.get().getParameters());
         return new HiveTableHandle(tableName.getSchemaName(), tableName.getTableName());
     }
