@@ -21,8 +21,6 @@ import com.facebook.presto.spi.security.AccessDeniedException;
 import com.facebook.presto.spi.security.Identity;
 import com.facebook.presto.spi.security.Privilege;
 
-import javax.inject.Inject;
-
 import java.util.Set;
 
 import static com.facebook.presto.hive.HiveMetadata.getSourceTableNameForPartitionsTable;
