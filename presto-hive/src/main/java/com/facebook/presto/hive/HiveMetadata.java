@@ -1615,7 +1615,7 @@ public class HiveMetadata
     {
         checkArgument(isPartitionsSystemTable(tableName), "not a partitions table name");
         return new SchemaTableName(
-                tableName.getSchemaName(), tableName.getTableName().substring(0,
-                tableName.getTableName().length() - PARTITIONS_TABLE_SUFFIX.length()));
+                tableName.getSchemaName(),
+                tableName.getTableName().substring(0, tableName.getTableName().length() - PARTITIONS_TABLE_SUFFIX.length()));
     }
 }
