@@ -1234,9 +1234,6 @@ public class TestHiveIntegrationSmokeTest
 
         assertUpdate(getSession(), createTable);
 
-        TableMetadata tableMetadata = getTableMetadata(catalog, TPCH_SCHEMA, tableName);
-        assertEquals(tableMetadata.getMetadata().getProperties().get(PARTITIONED_BY_PROPERTY), ImmutableList.of("part1", "part2"));
-
         assertQuery(
                 getSession(),
                 "SHOW COLUMNS FROM \"" + tableName + "$partitions\"",
