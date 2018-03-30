@@ -1608,7 +1608,7 @@ public class HiveMetadata
 
     public static boolean isPartitionsSystemTable(SchemaTableName tableName)
     {
-        return tableName.getTableName().endsWith(PARTITIONS_TABLE_SUFFIX) && !tableName.getTableName().equals(PARTITIONS_TABLE_SUFFIX);
+        return tableName.getTableName().endsWith(PARTITIONS_TABLE_SUFFIX) && tableName.getTableName().length() > PARTITIONS_TABLE_SUFFIX.length();
     }
 
     public static SchemaTableName getSourceTableNameForPartitionsTable(SchemaTableName tableName)
