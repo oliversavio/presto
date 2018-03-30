@@ -333,12 +333,12 @@ public class HiveMetadata
                 Constraint<ColumnHandle> targetConstraint = new Constraint<>(targetTupleDomain, targetPredicate);
                 Iterable<List<Object>> records = () ->
                         stream(partitionManager.getPartitions(metastore, sourceTableHandle, targetConstraint).getPartitions())
-                        .map(hivePartition ->
-                                (List<Object>) IntStream.range(0, partitionColumns.size())
-                                        .mapToObj(fieldIdToColumnHandle::get)
-                                        .map(columnHandle -> hivePartition.getKeys().get(columnHandle).getValue())
-                                        .collect(toImmutableList()))
-                        .iterator();
+                                .map(hivePartition ->
+                                        (List<Object>) IntStream.range(0, partitionColumns.size())
+                                                .mapToObj(fieldIdToColumnHandle::get)
+                                                .map(columnHandle -> hivePartition.getKeys().get(columnHandle).getValue())
+                                                .collect(toImmutableList()))
+                                .iterator();
 
                 return new InMemoryRecordSet(partitionColumnTypes, records).cursor();
             }
