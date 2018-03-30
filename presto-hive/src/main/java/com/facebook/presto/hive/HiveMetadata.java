@@ -265,7 +265,7 @@ public class HiveMetadata
 
         if (isPartitionsSystemTable(tableName)) {
             // We must not allow $partitions table due to how permissions are checked in PartitionsAwareAccessControl.checkCanSelectFromTable()
-            throw new PrestoException(StandardErrorCode.NOT_SUPPORTED, String.format("Unexpected table %s present in Hive metastore", tableName));
+            throw new PrestoException(StandardErrorCode.NOT_SUPPORTED, format("Unexpected table %s present in Hive metastore", tableName));
         }
 
         verifyOnline(tableName, Optional.empty(), getProtectMode(table.get()), table.get().getParameters());
