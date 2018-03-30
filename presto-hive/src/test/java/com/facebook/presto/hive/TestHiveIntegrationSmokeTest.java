@@ -1179,7 +1179,7 @@ public class TestHiveIntegrationSmokeTest
                         .mapToObj(String::valueOf)
                         .collect(joining(",")));
 
-        // using $partitions system table we can read beyond limit
+        // using $partitions system table we are not constrained by hive.max-partitions-per-scan
         assertQuery(
                 session,
                 "SELECT * FROM \"" + tableName + "$partitions\"",
