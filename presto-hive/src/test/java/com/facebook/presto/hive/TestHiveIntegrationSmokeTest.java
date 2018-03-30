@@ -1256,6 +1256,35 @@ public class TestHiveIntegrationSmokeTest
     }
 
     @Test
+    public void testShowPartitionsFromPartitionsSystemTable()
+    {
+        String tableName = "test_show_partitions_from_partitions";
+
+        @Language("SQL") String createTable = "" +
+                "CREATE TABLE " + tableName + " " +
+                "(" +
+                "  foo VARCHAR," +
+                "  part1 BIGINT," +
+                "  part2 VARCHAR" +
+                ") " +
+                "WITH (" +
+                "partitioned_by = ARRAY[ 'part1', 'part2' ]" +
+                ") ";
+
+        assertUpdate(getSession(), createTable);
+
+        assertQueryFails(
+                getSession(),
+                "SHOW PARTITIONS FROM \"" + tableName + "$partitions\"",
+                ".*Table does not have partition columns: hive.tpch.test_show_partitions_from_partitions\\$partitions");
+
+        assertQueryFails(
+                getSession(),
+                "SHOW PARTITIONS FROM \"non_existent$partitions\"",
+                ".*Table 'hive.tpch.non_existent\\$partitions' does not exist");
+    }
+
+    @Test
     public void testInsertUnpartitionedTable()
     {
         for (TestingHiveStorageFormat storageFormat : getAllTestingHiveStorageFormat()) {
