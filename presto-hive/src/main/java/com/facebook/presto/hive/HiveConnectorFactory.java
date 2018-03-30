@@ -119,11 +119,7 @@ public class HiveConnectorFactory
             ConnectorNodePartitioningProvider connectorDistributionProvider = injector.getInstance(ConnectorNodePartitioningProvider.class);
             HiveSessionProperties hiveSessionProperties = injector.getInstance(HiveSessionProperties.class);
             HiveTableProperties hiveTableProperties = injector.getInstance(HiveTableProperties.class);
-            ConnectorAccessControl accessControl = injector.getInstance(ConnectorAccessControl.class);
-
-            // this is kinda ugly but doing it Guice way is quite messy. We would need to use PrivateModules
-            // binding annotations. This is much simpler.
-            accessControl = new PartitionsAwareAccessControl(accessControl);
+            ConnectorAccessControl accessControl = new PartitionsAwareAccessControl(injector.getInstance(ConnectorAccessControl.class));
 
             return new HiveConnector(
                     lifeCycleManager,
