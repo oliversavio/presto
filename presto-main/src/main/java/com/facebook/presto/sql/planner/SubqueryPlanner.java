@@ -287,13 +287,16 @@ class SubqueryPlanner
             return subPlan;
         }
 
+        // add an explicit projection that removes all columns
+        PlanNode subqueryNode = new ProjectNode(idAllocator.getNextId(), subqueryPlan.getRoot(), Assignments.of());
+
         Symbol exists = symbolAllocator.newSymbol("exists", BOOLEAN);
         subPlan.getTranslations().put(existsPredicate, exists);
         ExistsPredicate rewrittenExistsPredicate = new ExistsPredicate(BooleanLiteral.TRUE_LITERAL);
         return appendApplyNode(
                 subPlan,
                 existsPredicate.getSubquery(),
-                subqueryPlan,
+                subqueryNode,
                 Assignments.of(exists, rewrittenExistsPredicate),
                 correlationAllowed);
     }
@@ -432,7 +435,16 @@ class SubqueryPlanner
             Assignments subqueryAssignments,
             boolean correlationAllowed)
     {
-        PlanNode subqueryNode = subqueryPlan.getRoot();
+        return appendApplyNode(subPlan, subquery, subqueryPlan.getRoot(), subqueryAssignments, correlationAllowed);
+    }
+
+    private PlanBuilder appendApplyNode(
+            PlanBuilder subPlan,
+            Node subquery,
+            PlanNode subqueryNode,
+            Assignments subqueryAssignments,
+            boolean correlationAllowed)
+    {
         Map<Expression, Expression> correlation = extractCorrelation(subPlan, subqueryNode);
         if (!correlationAllowed && !correlation.isEmpty()) {
             throw notSupportedException(subquery, "Correlated subquery in given context");
