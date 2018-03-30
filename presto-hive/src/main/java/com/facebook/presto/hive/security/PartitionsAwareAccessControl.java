@@ -35,7 +35,6 @@ public class PartitionsAwareAccessControl
 {
     private final ConnectorAccessControl delegate;
 
-    @Inject
     public PartitionsAwareAccessControl(ConnectorAccessControl delegate)
     {
         this.delegate = requireNonNull(delegate, "delegate is null");
