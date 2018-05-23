@@ -166,8 +166,13 @@ public class BasePlanTest
 
     protected Plan plan(String sql, LogicalPlanner.Stage stage, boolean forceSingleNode)
     {
+        return plan(sql, stage, queryRunner.getDefaultSession(), forceSingleNode);
+    }
+
+    protected Plan plan(String sql, LogicalPlanner.Stage stage, Session session, boolean forceSingleNode)
+    {
         try {
-            return queryRunner.inTransaction(transactionSession -> queryRunner.createPlan(transactionSession, sql, stage, forceSingleNode));
+            return queryRunner.inTransaction(session, transactionSession -> queryRunner.createPlan(transactionSession, sql, stage, forceSingleNode));
         }
         catch (RuntimeException e) {
             throw new AssertionError("Planning failed for SQL: " + sql, e);
