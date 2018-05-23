@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.sql.planner;
 
+import com.facebook.presto.Session;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.sql.planner.assertions.BasePlanTest;
 import com.facebook.presto.sql.planner.optimizations.AddLocalExchanges;
@@ -22,6 +23,7 @@ import com.facebook.presto.sql.planner.plan.AggregationNode;
 import com.facebook.presto.sql.planner.plan.ApplyNode;
 import com.facebook.presto.sql.planner.plan.DistinctLimitNode;
 import com.facebook.presto.sql.planner.plan.EnforceSingleRowNode;
+import com.facebook.presto.sql.planner.plan.ExchangeNode;
 import com.facebook.presto.sql.planner.plan.FilterNode;
 import com.facebook.presto.sql.planner.plan.IndexJoinNode;
 import com.facebook.presto.sql.planner.plan.JoinNode;
@@ -41,9 +43,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+import static com.facebook.presto.SystemSessionProperties.DISTRIBUTED_JOIN;
+import static com.facebook.presto.SystemSessionProperties.FORCE_SINGLE_NODE_OUTPUT;
 import static com.facebook.presto.spi.predicate.Domain.singleValue;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.VarcharType.createVarcharType;
+import static com.facebook.presto.sql.planner.LogicalPlanner.Stage.OPTIMIZED_AND_VALIDATED;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.aggregation;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.any;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.anyNot;
@@ -65,6 +70,7 @@ import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.strict
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.tableScan;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.values;
 import static com.facebook.presto.sql.planner.optimizations.PlanNodeSearcher.searchFrom;
+import static com.facebook.presto.sql.planner.plan.ExchangeNode.Scope.REMOTE;
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.INNER;
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.LEFT;
 import static com.facebook.presto.tests.QueryTemplate.queryTemplate;
@@ -466,5 +472,32 @@ public class TestLogicalPlanner
                 output(
                         filter("orderkey = BIGINT '5'",
                                 constrainedTableScanWithTableLayout("orders", filterConstraint, ImmutableMap.of("orderkey", "orderkey")))));
+    }
+
+    @Test
+    public void testBroadcastCorrelatedSubqueryAvoidsRemoteExchangeBeforeAggregation()
+    {
+        Session broadcastJoin = Session.builder(this.getQueryRunner().getDefaultSession())
+                .setSystemProperty(DISTRIBUTED_JOIN, Boolean.toString(false))
+                .setSystemProperty(FORCE_SINGLE_NODE_OUTPUT, Boolean.toString(false))
+                .build();
+        // region is unpartitioned, AssignUniqueId should provide satisfying partitioning for count(*) after LEFT JOIN
+        assertEquals(
+                countOfMatchingNodes(
+                        plan("SELECT (SELECT count(*) FROM region r2 WHERE r2.regionkey > r1.regionkey) FROM region r1", OPTIMIZED_AND_VALIDATED, broadcastJoin, false),
+                        node -> node instanceof ExchangeNode && ((ExchangeNode) node).getScope() == REMOTE),
+                // one RemoteExchange for LEFT JOIN build rows
+                1);
+
+        // orders is naturally partitioned, AssignUniqueId should not overwrite its natural partitioning
+        assertEquals(
+                countOfMatchingNodes(
+                        plan(
+                                "SELECT count(count) " +
+                                        "FROM (SELECT o1.orderkey orderkey, (SELECT count(*) FROM orders o2 WHERE o2.orderkey > o1.orderkey) count FROM orders o1) " +
+                                        "GROUP BY orderkey", OPTIMIZED_AND_VALIDATED, broadcastJoin, false),
+                        node -> node instanceof ExchangeNode && ((ExchangeNode) node).getScope() == REMOTE),
+                // one RemoteExchange for LEFT JOIN build rows
+                1);
     }
 }
