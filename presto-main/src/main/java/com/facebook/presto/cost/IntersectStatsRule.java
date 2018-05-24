@@ -18,11 +18,12 @@ import com.facebook.presto.matching.Pattern;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.plan.IntersectNode;
 
-import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import static com.facebook.presto.cost.AggregationStatsRule.groupBy;
 import static com.facebook.presto.util.MoreMath.min;
-import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Collections.emptyMap;
 
 public class IntersectStatsRule
@@ -44,11 +45,10 @@ public class IntersectStatsRule
     @Override
     protected PlanNodeStatsEstimate operate(PlanNodeStatsEstimate first, PlanNodeStatsEstimate second)
     {
-        checkArgument(new HashSet<>(first.getSymbolsWithKnownStatistics()).equals(new HashSet<>(second.getSymbolsWithKnownStatistics())));
-
         PlanNodeStatsEstimate.Builder statsBuilder = PlanNodeStatsEstimate.builder();
 
-        for (Symbol symbol : first.getSymbolsWithKnownStatistics()) {
+        Set<Symbol> allSymbols = allSymbols(first);
+        for (Symbol symbol : allSymbols) {
             SymbolStatsEstimate leftSymbolStats = first.getSymbolStatistics(symbol);
             SymbolStatsEstimate rightSymbolStats = second.getSymbolStatistics(symbol);
             StatisticRange leftRange = StatisticRange.from(leftSymbolStats);
@@ -67,6 +67,13 @@ public class IntersectStatsRule
 
         statsBuilder.setOutputRowCount(first.getOutputRowCount() + second.getOutputRowCount());  // this is the maximum row count;
         PlanNodeStatsEstimate intermediateResult = statsBuilder.build();
-        return groupBy(intermediateResult, intermediateResult.getSymbolsWithKnownStatistics(), emptyMap());
+        return groupBy(intermediateResult, allSymbols, emptyMap());
+    }
+
+    private static Set<Symbol> allSymbols(PlanNodeStatsEstimate... estimates)
+    {
+        return Stream.of(estimates)
+                .flatMap(estimate -> estimate.getSymbolsWithKnownStatistics().stream())
+                .collect(toImmutableSet());
     }
 }
