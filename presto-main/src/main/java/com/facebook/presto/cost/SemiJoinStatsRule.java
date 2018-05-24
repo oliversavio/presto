@@ -44,8 +44,6 @@ public class SemiJoinStatsRule
         // For now we just propagate statistics for source symbols.
         // Handling semiJoinOutput symbols requires support for correlation for boolean columns.
 
-        // TODO add UNKNOWN_STATS for ((SemiJoinNode) node).getSourceJoinSymbol(), drop unused symbols... there should be a test for that, right?
-
         return Optional.of(sourceStats);
     }
 }
