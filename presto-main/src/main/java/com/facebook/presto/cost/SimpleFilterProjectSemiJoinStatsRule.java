@@ -37,8 +37,8 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Objects.requireNonNull;
 
 /**
- * It is not yet proved that this heuristic makes any better, but also it is not proved that it make any worse.
- * Either this rule will be enhanced in the future or dropped at all.
+ * It is not yet proven whether this heuristic is any better or worse. Either this rule will be enhanced
+ * in the future or it will be dropped altogether.
  */
 public class SimpleFilterProjectSemiJoinStatsRule
         extends SimpleStatsRule
