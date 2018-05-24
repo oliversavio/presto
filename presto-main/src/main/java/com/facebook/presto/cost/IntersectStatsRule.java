@@ -59,8 +59,8 @@ public class IntersectStatsRule
                     symbol,
                     SymbolStatsEstimate.builder()
                             .setStatisticsRange(intersection)
-                            // it does matter how many nulls are preserved, the intersting point is the fact if there are nulls both sides or not
-                            // this will be normalized later by groupBy
+                            // It doesn't matter how many nulls are preserved, only whether there are nulls in the intersection or not.
+                            // The nullsFraction will be normalized below by groupBy.
                             .setNullsFraction(min(leftSymbolStats.getNullsFraction(), rightSymbolStats.getNullsFraction()))
                             .build());
         }
