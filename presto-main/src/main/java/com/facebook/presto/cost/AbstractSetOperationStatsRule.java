@@ -38,14 +38,14 @@ abstract class AbstractSetOperationStatsRule
     @Override
     protected final Optional<PlanNodeStatsEstimate> doCalculate(PlanNode node, StatsProvider statsProvider, Lookup lookup, Session session, Map<Symbol, Type> types)
     {
-        SetOperationNode unionNode = (SetOperationNode) node;
+        SetOperationNode setOperationNode = (SetOperationNode) node;
 
         Optional<PlanNodeStatsEstimate> estimate = Optional.empty();
         for (int i = 0; i < node.getSources().size(); i++) {
             PlanNode source = node.getSources().get(i);
             PlanNodeStatsEstimate sourceStats = statsProvider.getStats(source);
 
-            PlanNodeStatsEstimate sourceStatsWithMappedSymbols = mapToOutputSymbols(sourceStats, unionNode.getSymbolMapping(), i);
+            PlanNodeStatsEstimate sourceStatsWithMappedSymbols = mapToOutputSymbols(sourceStats, setOperationNode.getSymbolMapping(), i);
 
             if (estimate.isPresent()) {
                 estimate = Optional.of(operate(estimate.get(), sourceStatsWithMappedSymbols));
