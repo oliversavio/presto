@@ -105,7 +105,7 @@ public class TestTpchDistributedStats
                 checks -> checks.estimate(OUTPUT_ROW_COUNT, relativeError(.7, .9)));
 
         statisticsAssertion.check("SELECT * FROM orders WHERE o_custkey < 900 INTERSECT SELECT * FROM orders WHERE o_custkey > 600",
-                // TODO fix INTERSECT stats calculation as custkey values distirbution is pretty linear
+                // TODO fix INTERSECT stats calculation as custkey values distribution is pretty linear
                 checks -> checks.estimate(OUTPUT_ROW_COUNT, relativeError(4, 5)));
     }
 
@@ -117,7 +117,7 @@ public class TestTpchDistributedStats
                 checks -> checks.estimate(OUTPUT_ROW_COUNT, absoluteError(45, 45)));
 
         statisticsAssertion.check("SELECT * FROM orders WHERE o_custkey < 900 EXCEPT SELECT * FROM orders WHERE o_custkey > 600",
-                // TODO fix EXCEPT stats calculation as custkey values distirbution is pretty linear
+                // TODO fix EXCEPT stats calculation as custkey values distribution is pretty linear
                 checks -> checks.estimate(OUTPUT_ROW_COUNT, relativeError(1.5, 2)));
     }
 
