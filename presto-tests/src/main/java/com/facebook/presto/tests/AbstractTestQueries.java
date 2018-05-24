@@ -7899,7 +7899,7 @@ public abstract class AbstractTestQueries
     @Test
     public void testAssignUniqueId()
     {
-        String unionLineitem50Times = IntStream.range(0, 50)
+        String unionLineitem50Times = IntStream.range(0, 25)
                 .mapToObj(i -> "SELECT * FROM lineitem")
                 .collect(joining(" UNION ALL "));
 
@@ -7910,7 +7910,7 @@ public abstract class AbstractTestQueries
                         "   FROM (SELECT CASE orderkey WHEN 1 THEN orderkey ELSE 1 END " +
                         "       FROM (" + unionLineitem50Times + ")) o(c)) result(a) " +
                         "WHERE a = 1)",
-                "VALUES 3008750");
+                "VALUES 1504375");
     }
 
     @Test
